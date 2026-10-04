@@ -3,7 +3,7 @@
     "description": "Allow LuCI to manage singbox",
     "read": {
       "ubus": {
-        "luci.singbox": ["status", "health", "logs"]
+        "luci.singbox": ["status", "health", "logs", "confirm"]
       },
       "uci": ["singbox"]
     },
