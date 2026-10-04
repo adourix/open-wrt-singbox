@@ -16,6 +16,7 @@ start_service() {
     [ -f "$CONFIG" ] || return 1
     "$PROG" check -c "$CONFIG" >/dev/null 2>&1 || return 1
     [ ! -x "$FIREWALL" ] || "$FIREWALL" apply || return 1
+
     procd_open_instance
     procd_set_param command "$PROG" run -c "$CONFIG"
     procd_set_param respawn 3600 5 5
