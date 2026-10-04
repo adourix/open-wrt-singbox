@@ -64,7 +64,7 @@ vmess_parse() {
     [ "$port" -ge 1 ] 2>/dev/null && [ "$port" -le 65535 ] 2>/dev/null ||
         { vmess_error "Invalid VMess port"; return 1; }
 
-    aid=$(printf '%s' "$decoded" | jq -er 'if .aid==null then 0 elif (.aid|type)=="number" and ((.aid|floor)==.aid) then .aid elif (.aid|type)=="string" and test("^[0-9]+$") then tonumber else error end') ||
+    aid=$(printf '%s' "$decoded" | jq -er 'if .aid==null then 0 elif (.aid|type)=="number" and ((.aid|floor)==.aid) then .aid elif (.aid|type)=="string" and (.aid|test("^[0-9]+$")) then (.aid|tonumber) else error end') ||
         { vmess_error "Invalid VMess alter_id"; return 1; }
 
     security=$(printf '%s' "$decoded" | jq -er 'if .scy==null or .scy=="" then "auto" elif (.scy|type)=="string" then ascii_downcase else error end') ||
