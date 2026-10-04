@@ -17,6 +17,7 @@ load_core() {
     . "$MANAGER_LIB/protocol/vless/parser.sh" || return 1
     . "$MANAGER_LIB/config/generator.sh" || return 1
     . "$MANAGER_LIB/config/validator.sh" || return 1
+    . "$MANAGER_LIB/config/version.sh" || return 1
 }
 get_proxy_url() { uci -q get singbox.main.proxy_url 2>/dev/null; }
 set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; }
@@ -28,6 +29,7 @@ sync_autostart() {
 }
 
 config_valid() { [ -f "$CONFIG" ] && "$SINGBOX_BIN" check -c "$CONFIG" >/dev/null 2>&1; }
+version_valid() { check_singbox_version; }
 tun_exists() { command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1; }
 routing_exists() { command -v ip >/dev/null 2>&1 && ip route show dev singtun0 2>/dev/null | grep -q .; }
 process_running() { "$INIT" running >/dev/null 2>&1; }
@@ -50,6 +52,7 @@ status() {
 
 health() {
     failed=0
+    version_valid && printf "%s\n" "sing-box version: OK" || { printf "%s\n" "sing-box version: UNSUPPORTED"; failed=1; }
     command -v "$SINGBOX_BIN" >/dev/null 2>&1 && printf '%s\n' 'sing-box:       OK' || { printf '%s\n' 'sing-box:       MISSING'; failed=1; }
     config_valid && printf '%s\n' 'configuration:  OK' || { printf '%s\n' 'configuration:  ERROR'; failed=1; }
     process_running && printf '%s\n' 'process:        OK' || { printf '%s\n' 'process:        STOPPED'; failed=1; }
@@ -109,6 +112,7 @@ apply() {
     url=$(get_proxy_url) || { printf '%s\n' 'Unable to read proxy URL' >&2; return 1; }
     [ -n "$url" ] || { printf '%s\n' 'Proxy URL is empty' >&2; return 1; }
     load_core || return 1
+    version_valid || { printf "%s\n" "Unsupported sing-box version" >&2; return 1; }
     protocol=$(detect_protocol "$url") || { printf '%s\n' 'Unsupported proxy protocol' >&2; return 1; }
     case "$protocol" in
         vmess) profile=$(vmess_parse "$url") ;;
