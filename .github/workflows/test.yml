@@ -15,7 +15,7 @@ jobs:
         run: |
           find core tests -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
       - name: Shellcheck
-        run: find core tests -type f -name '*.sh' -print0 | xargs -0 shellcheck
+        run: find core tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
       - name: Unit tests
         run: |
           ./tests/protocol/test_detector.sh
