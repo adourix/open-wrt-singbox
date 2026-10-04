@@ -55,7 +55,7 @@ tun_exists() {
 
 routing_exists() {
     command -v ip >/dev/null 2>&1 &&
-        ip route show dev singtun0 2>/dev/null | grep -q .
+        ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'
 }
 
 process_running() {
