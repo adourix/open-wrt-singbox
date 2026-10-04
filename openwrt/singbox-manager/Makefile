@@ -37,6 +37,7 @@ define Package/singbox-manager/install
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/protocol/vless/parser.sh $(1)/usr/lib/singbox-manager/protocol/vless/parser.sh
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/generator.sh $(1)/usr/lib/singbox-manager/config/generator.sh
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/validator.sh $(1)/usr/lib/singbox-manager/config/validator.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/version.sh $(1)/usr/lib/singbox-manager/config/version.sh
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/service/manager.sh $(1)/usr/lib/singbox-manager/service/manager.sh
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/network/firewall.sh $(1)/usr/lib/singbox-manager/network/firewall.sh
 	$(INSTALL_DIR) $(1)/etc/config
