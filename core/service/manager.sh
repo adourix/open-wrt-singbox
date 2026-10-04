@@ -102,7 +102,10 @@ health() {
 cancel_rollback_timer() {
     [ -f "$ROLLBACK_PID" ] || return 0
     pid=$(cat "$ROLLBACK_PID" 2>/dev/null)
-    case "$pid" in *[!0-9]*|'') ;; *) kill "$pid" 2>/dev/null || true ;; esac
+    case "$pid" in *[!0-9]*|'') ;; *)
+        if [ "${ROLLBACK_TIMER_CHILD:-0}" != "1" ]; then kill "$pid" 2>/dev/null || true; fi
+        ;;
+    esac
     rm -f "$ROLLBACK_PID"
 }
 restore_previous_state() {
@@ -143,7 +146,7 @@ schedule_rollback() {
     (
         sleep "$ROLLBACK_DELAY"
         [ -f "$PENDING" ] || exit 0
-        rollback_pending >/dev/null 2>&1 || true
+        ROLLBACK_TIMER_CHILD=1 rollback_pending >/dev/null 2>&1 || true
     ) >/dev/null 2>&1 &
     echo "$!" > "$ROLLBACK_PID"
 }
