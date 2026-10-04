@@ -1,17 +1,15 @@
 {
   "luci-app-singbox": {
-    "description": "Allow LuCI to manage singbox",
+    "description": "Allow LuCI to manage singbox without exposing proxy credentials",
     "read": {
       "ubus": {
         "luci.singbox": ["status", "health", "logs", "preview", "confirm"]
-      },
-      "uci": ["singbox"]
+      }
     },
     "write": {
       "ubus": {
         "luci.singbox": ["save", "apply", "set_enabled"]
-      },
-      "uci": ["singbox"]
+      }
     }
   }
 }
