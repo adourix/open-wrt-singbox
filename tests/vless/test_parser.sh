@@ -59,7 +59,7 @@ printf '%s\n' "$out" | jq -e '.metadata.name == "hello$(touch /tmp/pwned)"' >/de
  fail "fragment sanitization"
 
 long=$(awk 'BEGIN { for (i=0;i<8200;i++) printf "A" }')
-expect_error "$long" "Invalid VLESS URL"
+expect_error "$long" "VLESS URL is too long"
 
 rm -f "$TMPDIR/vless.err"
 printf '%s\n' "VLESS parser tests: PASS"
