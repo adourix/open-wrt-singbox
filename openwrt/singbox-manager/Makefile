@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=singbox-manager
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -11,13 +11,13 @@ define Package/singbox-manager
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Lightweight sing-box manager
-  DEPENDS:=+sing-box +jq +nftables +wget
+  DEPENDS:=+sing-box +jq +nftables +uclient-fetch
 endef
 
 define Package/singbox-manager/description
 Core CLI, protocol parsers, configuration generator, service integration,
 TUN routing safety, DNS policy, validation and recovery for sing-box.
-endef
+endefine
 
 define Package/singbox-manager/conffiles
 /etc/config/singbox
