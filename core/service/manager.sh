@@ -20,6 +20,10 @@ load_core() {
     . "$MANAGER_LIB/config/version.sh" || return 1
 }
 
+load_version() {
+    . "$MANAGER_LIB/config/version.sh" || return 1
+}
+
 get_proxy_url() {
     uci -q get singbox.main.proxy_url 2>/dev/null
 }
@@ -40,6 +44,7 @@ config_valid() {
 }
 
 version_valid() {
+    load_version || return 1
     check_singbox_version
 }
 
