@@ -16,14 +16,19 @@ jobs:
           find core tests -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
       - name: Shellcheck
         run: find core tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
-      - name: Unit tests
-        run: |
-          sh ./tests/protocol/test_detector.sh
-          sh ./tests/vmess/test_parser.sh
-          sh ./tests/vless/test_parser.sh
-          sh ./tests/config/test_generator.sh
-          sh ./tests/config/test_validator.sh
-          sh ./tests/network/test_firewall.sh
-          sh ./tests/config/test_runtime_policy.sh
-          sh ./tests/config/test_version.sh
-      # Explicitly run tests through sh; executable bits are not part of the test contract.
+      - name: Test detector
+        run: sh ./tests/protocol/test_detector.sh
+      - name: Test VMess parser
+        run: sh ./tests/vmess/test_parser.sh
+      - name: Test VLESS parser
+        run: sh ./tests/vless/test_parser.sh
+      - name: Test config generator
+        run: sh ./tests/config/test_generator.sh
+      - name: Test config validator
+        run: sh ./tests/config/test_validator.sh
+      - name: Test firewall
+        run: sh ./tests/network/test_firewall.sh
+      - name: Test runtime policy
+        run: sh ./tests/config/test_runtime_policy.sh
+      - name: Test version
+        run: sh ./tests/config/test_version.sh
