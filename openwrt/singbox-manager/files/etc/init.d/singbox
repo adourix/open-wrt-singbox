@@ -17,24 +17,21 @@ recover_pending_config() {
         chmod 600 "$CONFIG" 2>/dev/null || true
         rm -f "$PENDING"
         logger -t singbox "pending configuration rolled back during boot"
-    else
-        rm -f "$PENDING"
-        logger -t singbox "pending configuration could not be restored"
-        return 1
+        return 0
     fi
+    rm -f "$PENDING"
+    logger -t singbox "pending configuration could not be restored"
+    return 1
 }
 
 start_service() {
     [ -x "$PROG" ] || return 1
-    [ -f "$CONFIG" ] || return 1
-
-    if ! recover_pending_config; then
-        return 1
-    fi
-
     config_load singbox 2>/dev/null || true
     config_get_bool enabled main enabled 0
     [ "$enabled" -eq 1 ] || return 0
+    [ -f "$CONFIG" ] || return 1
+
+    recover_pending_config || return 1
     "$PROG" check -c "$CONFIG" >/dev/null 2>&1 || return 1
     [ ! -x "$FIREWALL" ] || "$FIREWALL" apply || return 1
 
