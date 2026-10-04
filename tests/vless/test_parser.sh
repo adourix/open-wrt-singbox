@@ -9,7 +9,10 @@ fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
 expect_error() {
     input=$1; expected=$2
     if vless_parse "$input" >/dev/null 2>"$TMPDIR/vless.err"; then fail "expected: $expected"; fi
-    grep -F "$expected" "$TMPDIR/vless.err" >/dev/null || fail "wrong error: $expected"
+    if ! grep -F "$expected" "$TMPDIR/vless.err" >/dev/null; then
+        printf 'Actual error for input: %s\n' "$(cat "$TMPDIR/vless.err")" >&2
+        fail "wrong error: $expected"
+    fi
 }
 
 TMPDIR=${TMPDIR:-/tmp}
