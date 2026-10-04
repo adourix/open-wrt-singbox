@@ -1,0 +1,5 @@
+config singbox 'main'
+    option enabled '0'
+    option auto_start '0'
+    option proxy_url ''
+    option ipv6_policy 'block'
