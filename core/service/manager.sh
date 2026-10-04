@@ -79,12 +79,14 @@ read_pending_state() {
     PENDING_ENABLED=0
     PENDING_AUTOSTART=0
     PENDING_HAD_CONFIG=0
+    PENDING_PROXY_URL=
     [ -f "$PENDING" ] || return 1
     while IFS='=' read -r key value; do
         case "$key" in
             enabled) case "$value" in 0|1) PENDING_ENABLED=$value ;; esac ;;
             auto_start) case "$value" in 0|1) PENDING_AUTOSTART=$value ;; esac ;;
             had_config) case "$value" in 0|1) PENDING_HAD_CONFIG=$value ;; esac ;;
+            proxy_url) PENDING_PROXY_URL=$value ;;
         esac
     done < "$PENDING"
 }
@@ -98,6 +100,7 @@ restore_pending_state() {
     fi
     set_enabled "$PENDING_ENABLED" || return 1
     uci set singbox.main.auto_start="$PENDING_AUTOSTART" || return 1
+    uci set singbox.main.proxy_url="$PENDING_PROXY_URL" || return 1
     uci commit singbox || return 1
     sync_autostart || true
     rm -f "$PENDING"
@@ -113,7 +116,8 @@ schedule_rollback() {
     printf '%s\n' \
         "enabled=$PREVIOUS_ENABLED" \
         "auto_start=$PREVIOUS_AUTOSTART" \
-        "had_config=$PREVIOUS_HAD_CONFIG" > "$PENDING" || return 1
+        "had_config=$PREVIOUS_HAD_CONFIG" \
+        "proxy_url=$PREVIOUS_PROXY_URL" > "$PENDING" || return 1
     chmod 600 "$PENDING" 2>/dev/null || true
     (
         sleep "$ROLLBACK_DELAY"
@@ -177,6 +181,7 @@ apply() {
     umask 077
     mkdir -p "$CONFIG_DIR" || return 1
 
+    PREVIOUS_PROXY_URL=$(get_proxy_url)
     PREVIOUS_ENABLED=$(get_bool_option enabled)
     PREVIOUS_AUTOSTART=$(get_bool_option auto_start)
     if [ -f "$CONFIG" ]; then
@@ -199,6 +204,7 @@ apply() {
         fi
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
@@ -214,6 +220,7 @@ apply() {
         fi
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
@@ -229,6 +236,7 @@ apply() {
         fi
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
