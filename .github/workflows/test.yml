@@ -25,3 +25,4 @@ jobs:
           ./tests/config/test_validator.sh
           ./tests/network/test_firewall.sh
           ./tests/config/test_runtime_policy.sh
+          ./tests/config/test_version.sh
