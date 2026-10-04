@@ -25,11 +25,14 @@ jobs:
           tar --zstd -xf openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
           echo "SDK_DIR=$PWD/$(tar --zstd -tf openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst | head -1 | cut -d/ -f1)" >> "$GITHUB_ENV"
 
-      - name: Prepare feeds
+      - name: Prepare required feeds
         run: |
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
-          ./scripts/feeds install -a
+          ./scripts/feeds install -p packages sing-box jq
+          ./scripts/feeds install -p luci luci-base
+          test -f feeds/luci/luci.mk
+          test -f feeds/packages/net/sing-box/Makefile || test -f feeds/packages/*/sing-box/Makefile
 
       - name: Copy project packages
         run: |
@@ -40,8 +43,7 @@ jobs:
         run: |
           cd "$SDK_DIR"
           make defconfig
-          make package/singbox-manager/compile V=s
-          make package/luci-app-singbox/compile V=s
+          make package/singbox-manager/compile package/luci-app-singbox/compile V=s
 
       - name: Collect packages
         run: |
