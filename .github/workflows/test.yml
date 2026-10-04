@@ -1,0 +1,27 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq shellcheck
+      - name: Shell syntax
+        run: |
+          find core tests -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+      - name: Shellcheck
+        run: shellcheck core/**/*.sh tests/**/*.sh
+      - name: Unit tests
+        run: |
+          ./tests/protocol/test_detector.sh
+          ./tests/vmess/test_parser.sh
+          ./tests/vless/test_parser.sh
+          ./tests/config/test_generator.sh
+          ./tests/config/test_validator.sh
+          ./tests/network/test_firewall.sh
+          ./tests/config/test_runtime_policy.sh
