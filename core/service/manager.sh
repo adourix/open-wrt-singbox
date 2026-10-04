@@ -15,6 +15,7 @@ load_core() {
     . "$MANAGER_LIB/config/validator.sh" || return 1
 }
 get_proxy_url() { uci -q get singbox.main.proxy_url 2>/dev/null; }
+set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; }
 
 validate() {
     [ -f "$CONFIG" ] || { printf "%s\n" "Configuration: missing"; return 1; }
@@ -35,6 +36,12 @@ health() {
     return "$failed"
 }
 
+start() { set_enabled 1 || return 1; "$INIT" start; }
+stop() { set_enabled 0 || return 1; "$INIT" stop; }
+restart() { set_enabled 1 || return 1; "$INIT" restart; }
+enable() { "$INIT" enable; }
+disable() { "$INIT" disable; }
+
 apply() {
     url=$(get_proxy_url) || { printf "%s\n" "Unable to read proxy URL" >&2; return 1; }
     [ -n "$url" ] || { printf "%s\n" "Proxy URL is empty" >&2; return 1; }
@@ -48,14 +55,14 @@ apply() {
     printf "%s" "$config" > "$CANDIDATE" || return 1
     chmod 600 "$CANDIDATE" || return 1
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || { rm -f "$CANDIDATE"; return 1; }
-    "$INIT" restart || { restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1; "$INIT" restart >/dev/null 2>&1 || true; return 1; }
+    set_enabled 1 || return 1
+    "$INIT" restart || { restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1; set_enabled 0 >/dev/null 2>&1 || true; "$INIT" restart >/dev/null 2>&1 || true; return 1; }
 }
 
-recovery() { load_core || return 1; restore_backup "$CONFIG" "$BACKUP" || return 1; "$INIT" restart; }
+recovery() { load_core || return 1; restore_backup "$CONFIG" "$BACKUP" || return 1; set_enabled 1 || return 1; "$INIT" restart; }
 
 case "${1:-}" in
-    status) status ;; start) "$INIT" start ;; stop) "$INIT" stop ;; restart) "$INIT" restart ;;
-    enable) "$INIT" enable ;; disable) "$INIT" disable ;; apply) apply ;; validate) validate ;;
-    health) health ;; recovery) recovery ;;
+    status) status ;; start) start ;; stop) stop ;; restart) restart ;; enable) enable ;; disable) disable ;;
+    apply) apply ;; validate) validate ;; health) health ;; recovery) recovery ;;
     *) printf "%s\n" "Usage: singbox-manager {status|start|stop|restart|enable|disable|apply|validate|health|recovery}" >&2; exit 2 ;;
 esac
