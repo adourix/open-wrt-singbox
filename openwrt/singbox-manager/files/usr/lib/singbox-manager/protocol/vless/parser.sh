@@ -41,7 +41,7 @@ _vless_param() {
     return 1
 }
 
-vless_parse() {
+vless_parse() (
     url=$1
     [ -n "$url" ] || { vless_error "Invalid VLESS URL"; return 1; }
     [ ${#url} -le "$VLESS_MAX_INPUT" ] || { vless_error "VLESS URL is too long"; return 1; }
@@ -154,6 +154,6 @@ vless_parse() {
         ),
         metadata:{name:(if $name!="" then $name else null end)}
       }'
-}
+)
 
 if [ "${0##*/}" = "parser.sh" ] && [ "$#" -gt 0 ]; then vless_parse "$1"; fi
