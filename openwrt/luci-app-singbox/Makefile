@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for sing-box manager
 LUCI_DEPENDS:=+luci-base +rpcd +singbox-manager
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=MIT
 LUCI_MAINTAINER:=Abdulrahman Ayad
 
