@@ -4,16 +4,17 @@
 MANAGER=/usr/bin/singbox-manager
 
 status_json() {
-    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false
+    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false
     [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
     [ -f /etc/singbox/config.pending ] && pending=true
+    /etc/init.d/singbox enabled >/dev/null 2>&1 && auto_start=true
     "$MANAGER" health >/tmp/singbox-health.$$ 2>/dev/null || true
     grep -q '^process:[[:space:]]*OK$' /tmp/singbox-health.$$ && running=true
     grep -q '^configuration:[[:space:]]*OK$' /tmp/singbox-health.$$ && valid=true
     grep -q '^TUN:[[:space:]]*OK$' /tmp/singbox-health.$$ && tun=true
     grep -q '^routing:[[:space:]]*OK$' /tmp/singbox-health.$$ && routing=true
     rm -f /tmp/singbox-health.$$
-    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing"         '{enabled:$enabled,running:$running,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending}'
+    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing"         '{enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending}'
 }
 
 case "$1" in
