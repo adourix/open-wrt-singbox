@@ -10,19 +10,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq shellcheck
+        run: sudo apt-get update && sudo apt-get install -y jq shellcheck nftables
       - name: Shell syntax
         run: |
-          find core tests -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          find core tests openwrt/singbox-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          sh -n openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox
       - name: Shellcheck
-        run: find core tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
-      - name: Unit tests
         run: |
-          ./tests/protocol/test_detector.sh
-          ./tests/vmess/test_parser.sh
-          ./tests/vless/test_parser.sh
-          ./tests/config/test_generator.sh
-          ./tests/config/test_validator.sh
-          ./tests/network/test_firewall.sh
-          ./tests/config/test_runtime_policy.sh
-          ./tests/config/test_version.sh
+          find core tests openwrt/singbox-manager/files -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
+          shellcheck -S error openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox
+      - name: Test protocol detector
+        run: ./tests/protocol/test_detector.sh
+      - name: Test VMess parser
+        run: ./tests/vmess/test_parser.sh
+      - name: Test VLESS parser
+        run: ./tests/vless/test_parser.sh
+      - name: Test config generator
+        run: ./tests/config/test_generator.sh
+      - name: Test config validator
+        run: ./tests/config/test_validator.sh
+      - name: Test firewall
+        run: ./tests/network/test_firewall.sh
+      - name: Check runtime dependencies
+        run: |
+          grep -F 'uclient-fetch' core/service/manager.sh >/dev/null
+          grep -F 'VLESS_ALLOW_INSECURE' core/service/manager.sh >/dev/null
+          grep -F 'PENDING_STATE' core/service/manager.sh >/dev/null
+          grep -F 'restore_pending_uci' core/service/manager.sh >/dev/null
+          ! grep -F 'wget ' core/service/manager.sh >/dev/null
+      - name: Check source mirrors
+        run: |
+          for pair in \
+            "core/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh" \
+            "core/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh" \
+            "core/protocol/vless/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh" \
+            "core/config/generator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/generator.sh" \
+            "core/config/validator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/validator.sh" \
+            "core/config/version.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/version.sh" \
+            "core/network/firewall.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/network/firewall.sh" \
+            "core/service/manager.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh"; do
+            core_file=${pair%%|*}
+            packaged_file=${pair#*|}
+            cmp -s "$core_file" "$packaged_file"
+          done
+      - name: Check secret logging
+        run: |
+          if grep -R -nE 'echo .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' core >/dev/null 2>&1; then
+            echo 'possible secret logging found' >&2
+            exit 1
+          fi
+      - name: Test version
+        run: ./tests/config/test_version.sh

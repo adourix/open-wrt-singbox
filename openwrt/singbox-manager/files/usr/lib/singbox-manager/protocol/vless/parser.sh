@@ -41,7 +41,7 @@ _vless_param() {
     return 1
 }
 
-vless_parse() {
+vless_parse() (
     url=$1
     [ -n "$url" ] || { vless_error "Invalid VLESS URL"; return 1; }
     [ ${#url} -le "$VLESS_MAX_INPUT" ] || { vless_error "VLESS URL is too long"; return 1; }
@@ -65,11 +65,10 @@ vless_parse() {
         { vless_error "Invalid VLESS UUID"; return 1; }
 
     case "$authority" in
-        \[*\]:*) server=${authority#\[}; server=${server%%\]}; port=${authority##*\]:};;
+        \[*\]:*) server=${authority#\[}; server=${server%%\]:*}; port=${authority##*\]:};;
         *:*) server=${authority%:*}; port=${authority##*:};;
         *) vless_error "Invalid VLESS port"; return 1;;
     esac
-    case "$server" in *:*) ;; esac
     case "$authority" in *:*:* ) case "$authority" in \[*\]:*) ;; *) vless_error "IPv6 server must use brackets"; return 1;; esac;; esac
     [ -n "$server" ] || { vless_error "Missing VLESS server"; return 1; }
     printf '%s' "$server" | grep -Eq '^[A-Za-z0-9._:-]+$' ||
@@ -148,6 +147,6 @@ vless_parse() {
         ),
         metadata:{name:(if $name!="" then $name else null end)}
       }'
-}
+)
 
 if [ "${0##*/}" = "parser.sh" ] && [ "$#" -gt 0 ]; then vless_parse "$1"; fi
