@@ -63,10 +63,28 @@ jobs:
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
 
       - name: Build packages
+        env:
+          # Newer CMake rejects the old cmake_minimum_required used by some
+          # LuCI dependencies (for example lucihttp). Harmless if not needed.
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           cd "$SDK_DIR"
           make defconfig
-          make package/singbox-manager/compile package/luci-app-singbox/compile V=s
+          LOG="$GITHUB_WORKSPACE/build.log"
+          if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
+            echo "::group::Context before the first make failure"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 80 "$LOG"
+            echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: Collect packages
         run: |
