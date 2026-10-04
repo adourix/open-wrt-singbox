@@ -14,7 +14,7 @@ status_json() {
     grep -q '^TUN:[[:space:]]*OK$' /tmp/singbox-health.$$ && tun=true
     grep -q '^routing:[[:space:]]*OK$' /tmp/singbox-health.$$ && routing=true
     rm -f /tmp/singbox-health.$$
-    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing"         '{enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending}'
+    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" '{enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending}'
 }
 
 case "$1" in
