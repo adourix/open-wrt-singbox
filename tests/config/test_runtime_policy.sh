@@ -38,7 +38,7 @@ grep -F '+uclient-fetch' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || 
 }
 
 # Save & Apply must carry the current UI values instead of applying stale UCI state.
-grep -F 'method: \'apply\'' "$ROOT/openwrt/luci-app-singbox/htdocs/luci-static/resources/view/singbox/overview.js" >/dev/null || {
+grep -F "method: 'apply'" "$ROOT/openwrt/luci-app-singbox/htdocs/luci-static/resources/view/singbox/overview.js" >/dev/null || {
     echo "LuCI apply RPC is missing" >&2
     exit 1
 }
