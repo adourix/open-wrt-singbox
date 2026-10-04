@@ -90,7 +90,7 @@ schedule_rollback() {
     echo "$!" > "$ROLLBACK_PID"
 }
 
-start() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" start; }
+start() {\n    if [ -f "$PENDING" ] && [ -f "$BACKUP" ]; then rollback_pending || return 1; fi\n    set_enabled 1 || return 1\n    sync_autostart || true\n    "$INIT" start\n}
 stop() { set_enabled 0 || return 1; "$INIT" stop; cancel_rollback_timer; rm -f "$PENDING"; }
 restart() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" restart; }
 enable() { set_enabled 1 || return 1; "$INIT" enable; }
