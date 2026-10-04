@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-# shellcheck source=../../../core/protocol/detector.sh
+ROOT=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+# shellcheck source=../../core/protocol/detector.sh
 . "$ROOT/core/protocol/detector.sh"
 
 [ "$(detect_protocol 'vless://uuid@example.com:443')" = "vless" ]
