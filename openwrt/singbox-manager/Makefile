@@ -31,12 +31,14 @@ define Package/singbox-manager/install
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/protocol/vless
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/config
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/network
-	$(INSTALL_BIN) ../../../../core/protocol/detector.sh $(1)/usr/lib/singbox-manager/protocol/detector.sh
-	$(INSTALL_BIN) ../../../../core/protocol/vmess/parser.sh $(1)/usr/lib/singbox-manager/protocol/vmess/parser.sh
-	$(INSTALL_BIN) ../../../../core/protocol/vless/parser.sh $(1)/usr/lib/singbox-manager/protocol/vless/parser.sh
-	$(INSTALL_BIN) ../../../../core/config/generator.sh $(1)/usr/lib/singbox-manager/config/generator.sh
-	$(INSTALL_BIN) ../../../../core/config/validator.sh $(1)/usr/lib/singbox-manager/config/validator.sh
-	$(INSTALL_BIN) ../../../../core/network/firewall.sh $(1)/usr/lib/singbox-manager/network/firewall.sh
+	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/service
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/protocol/detector.sh $(1)/usr/lib/singbox-manager/protocol/detector.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/protocol/vmess/parser.sh $(1)/usr/lib/singbox-manager/protocol/vmess/parser.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/protocol/vless/parser.sh $(1)/usr/lib/singbox-manager/protocol/vless/parser.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/generator.sh $(1)/usr/lib/singbox-manager/config/generator.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/validator.sh $(1)/usr/lib/singbox-manager/config/validator.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/service/manager.sh $(1)/usr/lib/singbox-manager/service/manager.sh
+	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/network/firewall.sh $(1)/usr/lib/singbox-manager/network/firewall.sh
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/singbox $(1)/etc/config/singbox
 	$(INSTALL_DIR) $(1)/etc/init.d
