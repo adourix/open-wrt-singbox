@@ -31,6 +31,16 @@ jobs:
         run: ./tests/config/test_validator.sh
       - name: Test firewall
         run: ./tests/network/test_firewall.sh
+      - name: Validate nftables rule syntax
+        run: |
+          nft -c -f - <<'EOF'
+          table inet singbox {
+              chain forward {
+                  type filter hook forward priority -5; policy accept;
+                  iifname "br-lan" meta nfproto ipv6 drop
+              }
+          }
+          EOF
       - name: Test runtime policy
         run: sh -x ./tests/config/test_runtime_policy.sh
       - name: Test version
