@@ -51,7 +51,6 @@ write_pending_state() {
         '{proxy_url:$proxy_url,allow_insecure:$allow_insecure,auto_start:$auto_start,enabled:$enabled}' > "$PENDING_STATE" || return 1
     chmod 600 "$PENDING_STATE" || return 1
 }
-clear_pending_state() { rm -f "$PENDING_STATE"; }
 restore_pending_uci() {
     [ -f "$PENDING_STATE" ] || return 1
     old_proxy_url=$(jq -er '.proxy_url | strings' "$PENDING_STATE") || return 1
@@ -72,10 +71,19 @@ tun_exists() { command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null
 routing_exists() { command -v ip >/dev/null 2>&1 && ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'; }
 process_running() { "$INIT" running >/dev/null 2>&1; }
 connectivity_test() { command -v uclient-fetch >/dev/null 2>&1 || return 1; uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1; }
+restore_current_config() {
+    if [ -f "$BACKUP" ]; then
+        restore_backup "$CONFIG" "$BACKUP"
+    else
+        rm -f "$CONFIG" "$CANDIDATE"
+    fi
+}
 
 validate() { config_valid && printf '%s\n' 'Configuration: valid' && return 0; printf '%s\n' 'Configuration: invalid'; return 1; }
 status() {
-    if process_running; then printf '%s\n' 'Sing-box: running'; else printf '%s\n' 'Sing-box: stopped'; fi
+    if process_running; then printf '%s\n' 'State: RUNNING'; else
+        if [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ]; then printf '%s\n' 'State: ERROR'; else printf '%s\n' 'State: STOPPED'; fi
+    fi
     if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
     if tun_exists; then printf '%s\n' 'TUN: singtun0'; else printf '%s\n' 'TUN: absent'; fi
     if routing_exists; then printf '%s\n' 'Routing: OK'; else printf '%s\n' 'Routing: absent'; fi
@@ -112,13 +120,17 @@ restore_previous_state() {
 rollback_pending() {
     load_core || return 1
     cancel_rollback_timer
-    [ -f "$BACKUP" ] || return 1
-    restore_backup "$CONFIG" "$BACKUP" || return 1
+    restore_current_config || return 1
     if [ -f "$PENDING_STATE" ]; then
         old_state=$(restore_pending_uci) || return 1
         old_enabled=${old_state%%|*}; old_auto_start=${old_state#*|}
         case "$old_auto_start" in 1|yes|true) "$INIT" enable ;; *) "$INIT" disable ;; esac
-        if [ "$old_enabled" = "1" ]; then "$INIT" restart || return 1; else "$INIT" stop || return 1; fi
+        if [ "$old_enabled" = "1" ]; then
+            "$INIT" restart || return 1
+            verify_runtime || { set_enabled 0 >/dev/null 2>&1 || true; "$INIT" stop >/dev/null 2>&1 || true; return 1; }
+        else
+            "$INIT" stop || return 1
+        fi
     else
         set_enabled 0 || return 1
         "$INIT" stop || return 1
@@ -135,14 +147,57 @@ schedule_rollback() {
     ) >/dev/null 2>&1 &
     echo "$!" > "$ROLLBACK_PID"
 }
-start() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" start; }
-stop() { set_enabled 0 || return 1; "$INIT" stop; cancel_rollback_timer; rm -f "$PENDING" "$PENDING_STATE"; }
-restart() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" restart; }
+start() {
+    config_valid || { printf '%s\n' 'Configuration is invalid or missing' >&2; return 1; }
+    previous_enabled=$(uci -q get singbox.main.enabled 2>/dev/null || true)
+    [ "$previous_enabled" = "1" ] || previous_enabled=0
+    set_enabled 1 || return 1
+    sync_autostart || true
+    if ! "$INIT" start; then
+        set_enabled "$previous_enabled" >/dev/null 2>&1 || true
+        return 1
+    fi
+    if ! verify_runtime; then
+        printf '%s\n' 'Runtime verification failed' >&2
+        "$INIT" stop >/dev/null 2>&1 || true
+        set_enabled "$previous_enabled" >/dev/null 2>&1 || true
+        return 1
+    fi
+}
+stop() {
+    if [ -f "$PENDING" ] || [ -f "$PENDING_STATE" ]; then
+        cancel_rollback_timer
+        restore_current_config || return 1
+        restore_pending_uci >/dev/null 2>&1 || true
+        set_enabled 0 || return 1
+        "$INIT" stop || return 1
+        rm -f "$PENDING" "$PENDING_STATE"
+        return 0
+    fi
+    set_enabled 0 || return 1
+    "$INIT" stop || return 1
+}
+restart() {
+    set_enabled 1 || return 1
+    sync_autostart || true
+    "$INIT" restart
+}
 manager_enable() { set_enabled 1 || return 1; "$INIT" enable; }
 manager_disable() { set_enabled 0 || return 1; "$INIT" disable; }
 verify_runtime() { sleep 1; process_running && tun_exists && routing_exists && connectivity_test; }
-confirm() { [ -f "$PENDING" ] || return 0; cancel_rollback_timer; rm -f "$PENDING" "$PENDING_STATE"; printf '%s\n' 'Configuration confirmed'; }
+confirm() {
+    [ -f "$PENDING" ] || return 0
+    if ! verify_runtime; then
+        printf '%s\n' 'Current configuration failed runtime verification; rolling back' >&2
+        rollback_pending >/dev/null 2>&1 || true
+        return 1
+    fi
+    cancel_rollback_timer
+    rm -f "$PENDING" "$PENDING_STATE"
+    printf '%s\n' 'Configuration confirmed'
+}
 apply() {
+    [ ! -f "$PENDING" ] && [ ! -f "$PENDING_STATE" ] || { printf '%s\n' 'Another apply is awaiting confirmation' >&2; return 1; }
     url=$(get_proxy_url) || { printf '%s\n' 'Unable to read proxy URL' >&2; return 1; }
     [ -n "$url" ] || { printf '%s\n' 'Proxy URL is empty' >&2; return 1; }
     allow_insecure=$(get_allow_insecure); auto_start=$(get_auto_start)
@@ -162,13 +217,13 @@ apply() {
     set_enabled 1 || return 1; sync_autostart || true
     if ! "$INIT" restart; then
         printf '%s\n' 'Service restart failed; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        restore_current_config >/dev/null 2>&1 || true
         restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1 || true
         return 1
     fi
     if ! verify_runtime; then
         printf '%s\n' 'Runtime verification failed; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        restore_current_config >/dev/null 2>&1 || true
         if ! restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1; then
             set_enabled 0 >/dev/null 2>&1 || true; "$INIT" stop >/dev/null 2>&1 || true
         fi
@@ -176,20 +231,20 @@ apply() {
     fi
     if ! write_pending_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled"; then
         printf '%s\n' 'Unable to create rollback state; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        restore_current_config >/dev/null 2>&1 || true
         restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1 || true
         return 1
     fi
     if ! schedule_rollback; then
         printf '%s\n' 'Unable to schedule rollback; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        restore_current_config >/dev/null 2>&1 || true
         restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1 || true
         rm -f "$PENDING" "$PENDING_STATE"
         return 1
     fi
     if ! persist_desired_state "$url" "$allow_insecure" "$auto_start"; then
         printf '%s\n' 'Unable to persist configuration; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        restore_current_config >/dev/null 2>&1 || true
         restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1 || true
         cancel_rollback_timer; rm -f "$PENDING" "$PENDING_STATE"
         return 1
