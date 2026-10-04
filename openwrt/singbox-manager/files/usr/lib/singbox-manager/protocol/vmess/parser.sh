@@ -67,13 +67,13 @@ vmess_parse() {
     aid=$(printf '%s' "$decoded" | jq -er 'if .aid==null then 0 elif (.aid|type)=="number" and ((.aid|floor)==.aid) then .aid elif (.aid|type)=="string" and (.aid|test("^[0-9]+$")) then (.aid|tonumber) else error end') ||
         { vmess_error "Invalid VMess alter_id"; return 1; }
 
-    security=$(printf '%s' "$decoded" | jq -er 'if .scy==null or .scy=="" then "auto" elif (.scy|type)=="string" then ascii_downcase else error end') ||
+    security=$(printf '%s' "$decoded" | jq -er 'if .scy==null or .scy=="" then "auto" elif (.scy|type)=="string" then (.scy|ascii_downcase) else error end') ||
         { vmess_error "Invalid VMess security"; return 1; }
     case "$security" in auto|none|zero|aes-128-gcm|chacha20-poly1305|aes-128-ctr) ;; *) vmess_error "Unsupported VMess security"; return 1;; esac
 
-    network=$(printf '%s' "$decoded" | jq -er 'if .net==null or .net=="" then "tcp" elif (.net|type)=="string" then ascii_downcase else error end') ||
+    network=$(printf '%s' "$decoded" | jq -er 'if .net==null or .net=="" then "tcp" elif (.net|type)=="string" then (.net|ascii_downcase) else error end') ||
         { vmess_error "Invalid VMess transport"; return 1; }
-    case "$network" in tcp|ws|grpc) ;; *) vmess_error "Unsupported VMess transport"; return 1;; esac
+    case "$network" in tcp|ws|grpc) ;; *) vmess_error "Unsupported transport"; return 1;; esac
 
     tls=$(printf '%s' "$decoded" | jq -er 'if .tls==null or .tls=="" then false elif (.tls|type)=="string" then ((.tls|ascii_downcase)=="tls" or (.tls|ascii_downcase)=="1" or (.tls|ascii_downcase)=="true") else error end') ||
         { vmess_error "Invalid VMess TLS configuration"; return 1; }
