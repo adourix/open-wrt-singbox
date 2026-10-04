@@ -4,8 +4,9 @@
 MANAGER=/usr/bin/singbox-manager
 
 status_json() {
-    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false
+    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false; allow_insecure=false
     [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
+    [ "$(uci -q get singbox.main.allow_insecure 2>/dev/null)" = "1" ] && allow_insecure=true
     [ -f /etc/singbox/config.pending ] && pending=true
     /etc/init.d/singbox enabled >/dev/null 2>&1 && auto_start=true
     "$MANAGER" health >/tmp/singbox-health.$$ 2>/dev/null || true
@@ -14,12 +15,36 @@ status_json() {
     grep -q '^TUN:[[:space:]]*OK$' /tmp/singbox-health.$$ && tun=true
     grep -q '^routing:[[:space:]]*OK$' /tmp/singbox-health.$$ && routing=true
     rm -f /tmp/singbox-health.$$
-    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" '{enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending}'
+    jq -cn \
+        --argjson enabled "$enabled" \
+        --argjson running "$running" \
+        --argjson valid "$valid" \
+        --argjson tun "$tun" \
+        --argjson routing "$routing" \
+        --argjson auto_start "$auto_start" \
+        --argjson pending "$pending" \
+        --argjson allow_insecure "$allow_insecure" \
+        '{enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,allow_insecure:$allow_insecure}'
+}
+
+save_settings() {
+    input=$1
+    proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || return 1
+    [ -n "$proxy_url" ] || return 1
+    auto_start=$(printf '%s' "$input" | jq -er 'if has("auto_start") then (.auto_start|if type=="boolean" then . else error end) else false end') || return 1
+    allow_insecure=$(printf '%s' "$input" | jq -er 'if has("allow_insecure") then (.allow_insecure|if type=="boolean" then . else error end) else false end') || return 1
+    ipv6_policy=$(printf '%s' "$input" | jq -er 'if has("ipv6_policy") then .ipv6_policy else "block" end') || return 1
+    case "$ipv6_policy" in block) ;; *) return 1 ;; esac
+    uci set singbox.main.proxy_url="$proxy_url" || return 1
+    uci set singbox.main.auto_start="$([ "$auto_start" = true ] && echo 1 || echo 0)" || return 1
+    uci set singbox.main.allow_insecure="$([ "$allow_insecure" = true ] && echo 1 || echo 0)" || return 1
+    uci set singbox.main.ipv6_policy="$ipv6_policy" || return 1
+    uci commit singbox || return 1
 }
 
 case "$1" in
 list)
-    printf '%s\n' '{"status":{},"preview":{"proxy_url":""},"save":{"proxy_url":"","auto_start":true,"ipv6_policy":""},"apply":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
+    printf '%s\n' '{"status":{},"preview":{"proxy_url":"","allow_insecure":false},"save":{"proxy_url":"","auto_start":true,"allow_insecure":false,"ipv6_policy":""},"apply":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
     ;;
 call)
     case "$2" in
@@ -35,13 +60,20 @@ call)
         input=$(cat)
         proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || exit 1
         [ -n "$proxy_url" ] || exit 1
+        allow_insecure=$(printf '%s' "$input" | jq -er 'if has("allow_insecure") then (.allow_insecure|if type=="boolean" then . else error end) else false end') || exit 1
         . /usr/lib/singbox-manager/protocol/detector.sh
         . /usr/lib/singbox-manager/protocol/vmess/parser.sh
         . /usr/lib/singbox-manager/protocol/vless/parser.sh
         protocol=$(detect_protocol "$proxy_url") || exit 1
         case "$protocol" in
             vmess) profile=$(vmess_parse "$proxy_url") || exit 1 ;;
-            vless) profile=$(vless_parse "$proxy_url") || exit 1 ;;
+            vless)
+                if [ "$allow_insecure" = true ]; then
+                    profile=$(VLESS_ALLOW_INSECURE=1 vless_parse "$proxy_url") || exit 1
+                else
+                    profile=$(vless_parse "$proxy_url") || exit 1
+                fi
+                ;;
             *) exit 1 ;;
         esac
         printf '%s' "$profile" | jq -c '{
@@ -53,18 +85,12 @@ call)
         ;;
     save)
         input=$(cat)
-        proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || exit 1
-        [ -n "$proxy_url" ] || exit 1
-        auto_start=$(printf '%s' "$input" | jq -er 'if has("auto_start") then (.auto_start|if type=="boolean" then . else error end) else false end') || exit 1
-        ipv6_policy=$(printf '%s' "$input" | jq -er 'if has("ipv6_policy") then .ipv6_policy else "block" end') || exit 1
-        case "$ipv6_policy" in block) ;; *) exit 1;; esac
-        uci set singbox.main.proxy_url="$proxy_url" || exit 1
-        uci set singbox.main.auto_start="$([ "$auto_start" = true ] && echo 1 || echo 0)" || exit 1
-        uci set singbox.main.ipv6_policy="$ipv6_policy" || exit 1
-        uci commit singbox || exit 1
+        save_settings "$input" || exit 1
         printf '%s\n' '{"saved":true}'
         ;;
     apply)
+        input=$(cat)
+        save_settings "$input" || exit 1
         "$MANAGER" apply >/dev/null 2>&1 || exit 1
         printf '%s\n' '{"applied":true}'
         ;;
@@ -78,7 +104,7 @@ call)
         printf '%s\n' '{"confirmed":true}'
         ;;
     logs)
-        logread -e singbox 2>/dev/null | tail -n 100 | jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
+        logread -e singbox 2>/dev/null | tail -n 30 | jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
         ;;
     *) exit 1 ;;
     esac
