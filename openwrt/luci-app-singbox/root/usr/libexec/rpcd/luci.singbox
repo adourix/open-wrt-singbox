@@ -15,8 +15,7 @@ short_error() {
 
 status_json() {
     running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false; allow_insecure=false
-    configured=false
-    protocol=; server=; server_port=; transport=; tls=false
+    configured=false; protocol=; server=; server_port=; transport=; tls=false; state=STOPPED
 
     [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
     [ -n "$(uci -q get singbox.main.proxy_url 2>/dev/null)" ] && configured=true
@@ -24,12 +23,17 @@ status_json() {
     [ -f /etc/singbox/config.pending ] && pending=true
     /etc/init.d/singbox enabled >/dev/null 2>&1 && auto_start=true
 
-    "$MANAGER" health >/tmp/singbox-health.$$ 2>/dev/null || true
-    grep -q '^process:[[:space:]]*OK$' /tmp/singbox-health.$$ && running=true
-    grep -q '^configuration:[[:space:]]*OK$' /tmp/singbox-health.$$ && valid=true
-    grep -q '^TUN:[[:space:]]*OK$' /tmp/singbox-health.$$ && tun=true
-    grep -q '^routing:[[:space:]]*OK$' /tmp/singbox-health.$$ && routing=true
-    rm -f /tmp/singbox-health.$$
+    if command -v sing-box >/dev/null 2>&1 && [ -f "$CONFIG" ] && sing-box check -c "$CONFIG" >/dev/null 2>&1; then
+        valid=true
+    fi
+    if /etc/init.d/singbox running >/dev/null 2>&1; then
+        running=true
+        state=RUNNING
+        ip link show singtun0 >/dev/null 2>&1 && tun=true
+        ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)' && routing=true
+    elif [ "$enabled" = true ]; then
+        state=ERROR
+    fi
 
     if [ -f "$CONFIG" ]; then
         protocol=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | .type // empty' "$CONFIG" 2>/dev/null | head -n 1)
@@ -49,12 +53,13 @@ status_json() {
         --argjson pending "$pending" \
         --argjson configured "$configured" \
         --argjson allow_insecure "$allow_insecure" \
+        --arg state "$state" \
         --arg protocol "${protocol:-}" \
         --arg server "${server:-}" \
         --arg server_port "${server_port:-}" \
         --arg transport "${transport:-}" \
         --argjson tls "${tls:-false}" \
-        '{enabled:$enabled,running:$running,auto_start:$auto_start,allow_insecure:$allow_insecure,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls}'
+        '{state:$state,enabled:$enabled,running:$running,auto_start:$auto_start,allow_insecure:$allow_insecure,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls}'
 }
 
 preview_profile() {
@@ -73,9 +78,20 @@ preview_profile() {
     printf '%s' "$profile" | jq -c '{protocol,server,server_port,transport:.transport.type,tls:.tls.enabled,name:(.metadata.name // null)}'
 }
 
+run_manager() {
+    output=$($MANAGER "$1" 2>&1)
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        printf '%s\n' '{"ok":true}'
+    else
+        json_error "$(short_error "$output")"
+    fi
+    return 0
+}
+
 case "$1" in
 list)
-    printf '%s\n' '{"status":{},"preview":{"proxy_url":"","allow_insecure":false},"apply":{"proxy_url":"","auto_start":true,"allow_insecure":false},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
+    printf '%s\n' '{"status":{},"preview":{"proxy_url":"","allow_insecure":false},"apply":{"proxy_url":"","auto_start":true,"allow_insecure":false},"start":{},"stop":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
     ;;
 call)
     case "$2" in
@@ -111,25 +127,18 @@ call)
             json_error "$(short_error "$output")"
         fi
         ;;
+    start)
+        run_manager start
+        ;;
+    stop)
+        run_manager stop
+        ;;
     set_enabled)
         enabled=$(cat | jq -er '.enabled | if type=="boolean" then . else error end') || { json_error 'Invalid ON/OFF value.'; exit 0; }
         if [ "$enabled" = true ]; then
-            if output=$($MANAGER start 2>&1) && $MANAGER health >/dev/null 2>&1; then
-                printf '%s\n' '{"ok":true,"updated":true}'
-            else
-                $MANAGER stop >/dev/null 2>&1 || true
-                json_error "$(short_error "${output:-Sing-box failed health check.}")"
-            fi
+            run_manager start
         else
-            if ! output=$($MANAGER stop 2>&1); then
-                json_error "$(short_error "$output")"
-                exit 0
-            fi
-            if /etc/init.d/singbox running >/dev/null 2>&1 || ip link show singtun0 >/dev/null 2>&1 || ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'; then
-                json_error 'Sing-box did not stop cleanly.'
-            else
-                printf '%s\n' '{"ok":true,"updated":true}'
-            fi
+            run_manager stop
         fi
         ;;
     confirm)
@@ -140,7 +149,9 @@ call)
         fi
         ;;
     logs)
-        logread -e singbox 2>/dev/null | tail -n 30 | sed -E 's/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}/[REDACTED-UUID]/g' | jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
+        logread -e singbox 2>/dev/null | tail -n 30 |
+            sed -E 's#(vless|vmess)://[^[:space:]]+#[REDACTED-URL]#g; s/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}/[REDACTED-UUID]/g' |
+            jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
         ;;
     *) exit 1 ;;
     esac
