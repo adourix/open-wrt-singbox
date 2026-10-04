@@ -4,6 +4,8 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 . "$ROOT/core/network/firewall.sh"
 
+grep -F 'comment "singbox: block IPv6 bypass"' "$ROOT/core/network/firewall.sh" >/dev/null
+
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
