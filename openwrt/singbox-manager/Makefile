@@ -32,7 +32,7 @@ define Package/singbox-manager/install
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/protocol/vmess
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/protocol/vless
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/config/templates
-	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/templates/1.13.21.json $(1)/usr/lib/singbox-manager/config/templates/1.13.21.json
+	$(INSTALL_DATA) ./files/usr/lib/singbox-manager/config/templates/1.13.21.json $(1)/usr/lib/singbox-manager/config/templates/1.13.21.json
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/config
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/network
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/service
