@@ -7,7 +7,7 @@ VLESS_MAX_INPUT=8192
 vless_error() { printf '%s\n' "$1" >&2; return 1; }
 
 _vless_urldecode() {
-    LC_ALL=C awk '
+    LC_ALL=C printf '%s\n' "$1" | awk '
     function hv(c) { return index("0123456789abcdef",tolower(c))-1 }
     {
         s=$0; out=""
