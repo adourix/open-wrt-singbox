@@ -19,7 +19,7 @@ expect_error() {
         fail "wrong error for: $expected"
 }
 
-TMPDIR=\${TMPDIR:-/tmp}
+TMPDIR=${TMPDIR:-/tmp}
 umask 077
 
 json='{"v":"2","ps":"Test VMess","add":"example.test","port":"443","id":"550e8400-e29b-41d4-a716-446655440000","aid":"0","scy":"","net":"ws","type":"none","host":"example.test","path":"/ws","tls":"tls","sni":"example.test"}'
