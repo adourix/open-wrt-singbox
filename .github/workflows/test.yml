@@ -20,17 +20,17 @@ jobs:
           find core tests openwrt/singbox-manager/files -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
           shellcheck -S error openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox
       - name: Test protocol detector
-        run: ./tests/protocol/test_detector.sh
+        run: sh ./tests/protocol/test_detector.sh
       - name: Test VMess parser
-        run: ./tests/vmess/test_parser.sh
+        run: sh ./tests/vmess/test_parser.sh
       - name: Test VLESS parser
-        run: ./tests/vless/test_parser.sh
+        run: sh ./tests/vless/test_parser.sh
       - name: Test config generator
-        run: ./tests/config/test_generator.sh
+        run: sh ./tests/config/test_generator.sh
       - name: Test config validator
-        run: ./tests/config/test_validator.sh
+        run: sh ./tests/config/test_validator.sh
       - name: Test firewall
-        run: ./tests/network/test_firewall.sh
+        run: sh ./tests/network/test_firewall.sh
       - name: Check runtime dependencies
         run: |
           grep -F 'uclient-fetch' core/service/manager.sh >/dev/null
@@ -60,4 +60,4 @@ jobs:
             exit 1
           fi
       - name: Test version
-        run: ./tests/config/test_version.sh
+        run: sh ./tests/config/test_version.sh
