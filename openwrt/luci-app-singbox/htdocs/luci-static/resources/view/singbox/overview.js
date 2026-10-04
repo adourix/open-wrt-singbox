@@ -29,20 +29,22 @@ return view.extend({
 
         var statusBox = E('div', { class: 'cbi-section' });
         function updateStatus(s) {
+            status = s || {};
             statusBox.innerHTML = '';
             [
-                ['Enabled', s.enabled ? 'ON' : 'OFF'],
-                ['Process', s.running ? 'OK' : 'STOPPED'],
-                ['Configuration', s.configuration_valid ? 'OK' : 'ERROR'],
-                ['TUN', s.tun ? 'OK' : 'ERROR'],
-                ['Routing', s.routing ? 'OK' : 'ERROR'],
-                ['Apply', s.pending ? 'AWAITING CONFIRMATION' : 'CONFIRMED']
+                ['Enabled', status.enabled ? 'ON' : 'OFF'],
+                ['Process', status.running ? 'OK' : 'STOPPED'],
+                ['Configuration', status.configuration_valid ? 'OK' : 'ERROR'],
+                ['TUN', status.tun ? 'OK' : 'ERROR'],
+                ['Routing', status.routing ? 'OK' : 'ERROR'],
+                ['Apply', status.pending ? 'AWAITING CONFIRMATION' : 'CONFIRMED']
             ].forEach(function (f) {
                 statusBox.appendChild(E('div', {}, [
                     E('strong', {}, [_(f[0] + ': ')]),
                     document.createTextNode(f[1])
                 ]));
             });
+            auto.checked = !!status.auto_start;
         }
 
         var preview = E('button', {
@@ -118,9 +120,8 @@ return view.extend({
         var toggle = E('button', {
             class: 'cbi-button cbi-button-action',
             click: function() {
-                var next = !auto.checked;
+                var next = !status.enabled;
                 return callEnabled({ enabled: next }).then(function() {
-                    auto.checked = next;
                     return callStatus();
                 }).then(updateStatus);
             }
