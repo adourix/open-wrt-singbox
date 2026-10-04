@@ -12,7 +12,7 @@ firewall_apply() {
     nft list chain "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" >/dev/null 2>&1 ||
         nft add chain "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" '{ type filter hook forward priority -5; policy accept; }' || return 1
     nft flush chain "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" || return 1
-    nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" iifname "br-lan" meta nfproto ipv6 drop comment "singbox: block IPv6 bypass" || return 1
+    nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" iifname "br-lan" meta nfproto ipv6 drop || return 1
 }
 
 firewall_cleanup() {

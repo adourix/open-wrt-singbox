@@ -10,19 +10,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq shellcheck
+        run: sudo apt-get update && sudo apt-get install -y jq shellcheck nftables
       - name: Shell syntax
         run: |
-          find core tests -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          find core tests openwrt/singbox-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          sh -n openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox
       - name: Shellcheck
-        run: find core tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
-      - name: Unit tests
         run: |
-          ./tests/protocol/test_detector.sh
-          ./tests/vmess/test_parser.sh
-          ./tests/vless/test_parser.sh
-          ./tests/config/test_generator.sh
-          ./tests/config/test_validator.sh
-          ./tests/network/test_firewall.sh
-          ./tests/config/test_runtime_policy.sh
-          ./tests/config/test_version.sh
+          find core tests openwrt/singbox-manager/files -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
+          shellcheck -S error openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox
+      - name: Test protocol detector
+        run: ./tests/protocol/test_detector.sh
+      - name: Test VMess parser
+        run: ./tests/vmess/test_parser.sh
+      - name: Test VLESS parser
+        run: ./tests/vless/test_parser.sh
+      - name: Test config generator
+        run: ./tests/config/test_generator.sh
+      - name: Test config validator
+        run: ./tests/config/test_validator.sh
+      - name: Test firewall
+        run: ./tests/network/test_firewall.sh
+      - name: Test runtime policy
+        run: sh -x ./tests/config/test_runtime_policy.sh
+      - name: Test version
+        run: ./tests/config/test_version.sh
