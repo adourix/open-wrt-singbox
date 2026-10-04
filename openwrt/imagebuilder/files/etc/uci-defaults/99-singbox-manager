@@ -1,0 +1,7 @@
+#!/bin/sh
+uci -q set singbox.main.enabled='0'
+uci -q set singbox.main.auto_start='0'
+uci -q set singbox.main.ipv6_policy='block'
+uci -q delete singbox.main.proxy_url 2>/dev/null || true
+uci -q commit singbox
+exit 0
