@@ -75,7 +75,7 @@ vmess_parse() {
         { vmess_error "Invalid VMess transport"; return 1; }
     case "$network" in tcp|ws|grpc) ;; *) vmess_error "Unsupported transport"; return 1;; esac
 
-    tls=$(printf '%s' "$decoded" | jq -er 'if .tls==null or .tls=="" then false elif (.tls|type)=="string" then ((.tls|ascii_downcase)=="tls" or (.tls|ascii_downcase)=="1" or (.tls|ascii_downcase)=="true") else error end') ||
+    tls=$(printf '%s' "$decoded" | jq -r 'if .tls==null or .tls=="" then false elif (.tls|type)=="string" then ((.tls|ascii_downcase)=="tls" or (.tls|ascii_downcase)=="1" or (.tls|ascii_downcase)=="true") else error end') ||
         { vmess_error "Invalid VMess TLS configuration"; return 1; }
     sni=$(printf '%s' "$decoded" | jq -er 'if .sni==null then "" else .sni end') || { vmess_error "Invalid VMess SNI"; return 1; }
     host=$(printf '%s' "$decoded" | jq -er 'if .host==null then "" else .host end') || { vmess_error "Invalid VMess host"; return 1; }
