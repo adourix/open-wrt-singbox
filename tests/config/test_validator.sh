@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+ROOT=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+# shellcheck source=../../core/config/validator.sh
 . "$ROOT/core/config/validator.sh"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
