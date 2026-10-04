@@ -20,62 +20,28 @@ load_core() {
     . "$MANAGER_LIB/config/validator.sh" || return 1
     . "$MANAGER_LIB/config/version.sh" || return 1
 }
-
-load_version() {
-    . "$MANAGER_LIB/config/version.sh" || return 1
-}
-
-get_proxy_url() {
-    uci -q get singbox.main.proxy_url 2>/dev/null
-}
-
-set_enabled() {
-    uci set singbox.main.enabled="$1" && uci commit singbox
-}
-
+get_proxy_url() { uci -q get singbox.main.proxy_url 2>/dev/null; }
+set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; }
 sync_autostart() {
     case "$(uci -q get singbox.main.auto_start 2>/dev/null)" in
         1|yes|true) "$INIT" enable ;;
         *) "$INIT" disable ;;
     esac
 }
-
-config_valid() {
-    [ -f "$CONFIG" ] && "$SINGBOX_BIN" check -c "$CONFIG" >/dev/null 2>&1
-}
-
-version_valid() {
-    load_version || return 1
-    check_singbox_version
-}
-
-tun_exists() {
-    command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1
-}
-
+config_valid() { [ -f "$CONFIG" ] && "$SINGBOX_BIN" check -c "$CONFIG" >/dev/null 2>&1; }
+version_valid() { load_core && check_singbox_version; }
+tun_exists() { command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1; }
 routing_exists() {
     command -v ip >/dev/null 2>&1 &&
         ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'
 }
-
-process_running() {
-    "$INIT" running >/dev/null 2>&1
-}
-
-connectivity_test() {
-    command -v wget >/dev/null 2>&1 || return 1
-    wget -q -T 8 -O /dev/null https://api.ipify.org
-}
+process_running() { "$INIT" running >/dev/null 2>&1; }
+connectivity_test() { command -v wget >/dev/null 2>&1 || return 1; wget -q -T 8 -O /dev/null https://api.ipify.org; }
 
 validate() {
-    if config_valid; then
-        printf '%s\n' 'Configuration: valid'
-    else
-        printf '%s\n' 'Configuration: invalid'
-        return 1
-    fi
+    config_valid && printf '%s\n' 'Configuration: valid' && return 0
+    printf '%s\n' 'Configuration: invalid'; return 1
 }
-
 status() {
     if process_running; then printf '%s\n' 'Sing-box: running'; else printf '%s\n' 'Sing-box: stopped'; fi
     if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
@@ -83,7 +49,6 @@ status() {
     if routing_exists; then printf '%s\n' 'Routing: OK'; else printf '%s\n' 'Routing: absent'; fi
     if [ -f "$PENDING" ]; then printf '%s\n' 'Apply: awaiting confirmation'; else printf '%s\n' 'Apply: confirmed'; fi
 }
-
 health() {
     failed=0
     if version_valid; then printf '%s\n' 'sing-box version: OK'; else printf '%s\n' 'sing-box version: UNSUPPORTED'; failed=1; fi
@@ -94,18 +59,12 @@ health() {
     if routing_exists; then printf '%s\n' 'routing:        OK'; else printf '%s\n' 'routing:        ERROR'; failed=1; fi
     return "$failed"
 }
-
 cancel_rollback_timer() {
-    if [ -f "$ROLLBACK_PID" ]; then
-        pid=$(cat "$ROLLBACK_PID" 2>/dev/null)
-        case "$pid" in
-            *[!0-9]*|'') ;;
-            *) kill "$pid" 2>/dev/null || true ;;
-        esac
-        rm -f "$ROLLBACK_PID"
-    fi
+    [ -f "$ROLLBACK_PID" ] || return 0
+    pid=$(cat "$ROLLBACK_PID" 2>/dev/null)
+    case "$pid" in *[!0-9]*|'') ;; *) kill "$pid" 2>/dev/null || true ;; esac
+    rm -f "$ROLLBACK_PID"
 }
-
 rollback_pending() {
     load_core || return 1
     cancel_rollback_timer
@@ -113,9 +72,9 @@ rollback_pending() {
     restore_backup "$CONFIG" "$BACKUP" || return 1
     rm -f "$PENDING"
     set_enabled 1 || return 1
+    sync_autostart || true
     "$INIT" restart
 }
-
 schedule_rollback() {
     cancel_rollback_timer
     printf '%s\n' pending > "$PENDING" || return 1
@@ -126,61 +85,51 @@ schedule_rollback() {
     ) >/dev/null 2>&1 &
     echo "$!" > "$ROLLBACK_PID"
 }
-
 start() {
-    if [ -f "$PENDING" ] && [ -f "$BACKUP" ]; then rollback_pending || return 1; fi
     set_enabled 1 || return 1
     sync_autostart || true
     "$INIT" start
 }
-
 stop() {
     set_enabled 0 || return 1
     "$INIT" stop
     cancel_rollback_timer
     rm -f "$PENDING"
 }
-
 restart() {
     set_enabled 1 || return 1
     sync_autostart || true
     "$INIT" restart
 }
-
 manager_enable() {
     set_enabled 1 || return 1
     "$INIT" enable
 }
-
 manager_disable() {
     set_enabled 0 || return 1
     "$INIT" disable
 }
-
 verify_runtime() {
     sleep 1
     process_running && tun_exists && routing_exists && connectivity_test
 }
-
 confirm() {
     [ -f "$PENDING" ] || return 0
     cancel_rollback_timer
     rm -f "$PENDING"
     printf '%s\n' 'Configuration confirmed'
 }
-
 apply() {
     url=$(get_proxy_url) || { printf '%s\n' 'Unable to read proxy URL' >&2; return 1; }
     [ -n "$url" ] || { printf '%s\n' 'Proxy URL is empty' >&2; return 1; }
     load_core || return 1
-    version_valid || { printf '%s\n' 'Unsupported sing-box version' >&2; return 1; }
+    check_singbox_version || { printf '%s\n' 'Unsupported sing-box version' >&2; return 1; }
     protocol=$(detect_protocol "$url") || { printf '%s\n' 'Unsupported proxy protocol' >&2; return 1; }
     case "$protocol" in
-        vmess) profile=$(vmess_parse "$url") ;;
-        vless) profile=$(vless_parse "$url") ;;
+        vmess) profile=$(vmess_parse "$url") || return 1 ;;
+        vless) profile=$(vless_parse "$url") || return 1 ;;
         *) printf '%s\n' 'Unsupported proxy protocol' >&2; return 1 ;;
     esac
-    [ -n "$profile" ] || return 1
     config=$(generate_config "$profile") || return 1
     umask 077
     mkdir -p "$CONFIG_DIR" || return 1
@@ -205,12 +154,11 @@ apply() {
     schedule_rollback || return 1
     printf '%s\n' 'Configuration applied; confirmation required'
 }
-
 recovery() {
     load_core || return 1
     cancel_rollback_timer
     "$INIT" stop >/dev/null 2>&1 || true
-    if [ -x "$FIREWALL" ]; then "$FIREWALL" cleanup >/dev/null 2>&1 || true; fi
+    [ ! -x "$FIREWALL" ] || "$FIREWALL" cleanup >/dev/null 2>&1 || true
     if [ -f "$BACKUP" ]; then
         restore_backup "$CONFIG" "$BACKUP" || return 1
         rm -f "$PENDING"
@@ -223,7 +171,6 @@ recovery() {
         "$INIT" stop
     fi
 }
-
 case "${1:-}" in
     status) status ;;
     start) start ;;
