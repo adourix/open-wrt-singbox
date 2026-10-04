@@ -49,9 +49,9 @@ vless_parse() {
 
     rest=${url#vless://}
     fragment=
-    case "$rest" in *#*) fragment=${rest#*#}; rest=${rest%%#*};; esac
+    case "$rest" in *\#*) fragment=${rest#*\#}; rest=${rest%%\#*};; esac
     query=
-    case "$rest" in *?*) query=${rest#*?}; rest=${rest%%?*};; esac
+    case "$rest" in *\?*) query=${rest#*\?}; rest=${rest%%\?*};; esac
 
     case "$rest" in
         *@*) userinfo=${rest%%@*}; authority=${rest#*@};;
@@ -60,15 +60,17 @@ vless_parse() {
     [ -n "$userinfo" ] || { vless_error "Invalid VLESS UUID"; return 1; }
     [ -n "$authority" ] || { vless_error "Missing VLESS server"; return 1; }
 
-    uuid=$(_vless_urldecode "$userinfo") || { vless_error "Invalid VLESS UUID"; return 1; }
+    uuid=$( _vless_urldecode "$userinfo" ) || { vless_error "Invalid VLESS UUID"; return 1; }
     printf '%s' "$uuid" | grep -Eq '^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$' ||
         { vless_error "Invalid VLESS UUID"; return 1; }
 
     case "$authority" in
-        [*]:*) server=${authority#[}; server=${server%%]*}; port=${authority##*]:};;
+        \[*\]:*) server=${authority#\[}; server=${server%%\]}; port=${authority##*\]:};;
         *:*) server=${authority%:*}; port=${authority##*:};;
         *) vless_error "Invalid VLESS port"; return 1;;
     esac
+    case "$server" in *:*) ;; esac
+    case "$authority" in *:*:* ) case "$authority" in \[*\]:*) ;; *) vless_error "IPv6 server must use brackets"; return 1;; esac;; esac
     [ -n "$server" ] || { vless_error "Missing VLESS server"; return 1; }
     printf '%s' "$server" | grep -Eq '^[A-Za-z0-9._:-]+$' ||
         { vless_error "Invalid VLESS server"; return 1; }
@@ -79,8 +81,8 @@ vless_parse() {
 
     type= security= sni= host= path= service_name= flow= fp= pbk= sid= alpn= encryption= insecure=
     for key in type security sni host path serviceName flow fp pbk sid alpn encryption allowInsecure insecure; do
-        raw=$(_vless_param "$key" "$query" 2>/dev/null) || continue
-        value=$(_vless_urldecode "$raw") || { vless_error "Invalid URL encoding"; return 1; }
+        raw=$( _vless_param "$key" "$query" 2>/dev/null ) || continue
+        value=$( _vless_urldecode "$raw" ) || { vless_error "Invalid URL encoding"; return 1; }
         case "$key" in
             type) type=$value;; security) security=$value;; sni) sni=$value;; host) host=$value;;
             path) path=$value;; serviceName) service_name=$value;; flow) flow=$value;; fp) fp=$value;;
@@ -89,8 +91,8 @@ vless_parse() {
         esac
     done
 
-    name=$(_vless_urldecode "$fragment") || { vless_error "Invalid URL encoding"; return 1; }
-    name=$(printf '%s' "$name" | LC_ALL=C tr -d '\000-\037\177')
+    name=$( _vless_urldecode "$fragment" ) || { vless_error "Invalid URL encoding"; return 1; }
+    name=$(printf '%s' "$name" | LC_ALL=C tr -d '[:cntrl:]')
 
     [ -z "$encryption" ] || [ "$encryption" = "none" ] ||
         { vless_error "Unsupported VLESS encryption"; return 1; }
@@ -120,9 +122,14 @@ vless_parse() {
         { vless_error "Unsupported VLESS flow"; return 1; }
 
     tls_enabled=false
-    [ "$security" = "tls" ] || [ "$security" = "reality" ] && tls_enabled=true
+    if [ "$security" = "tls" ] || [ "$security" = "reality" ]; then tls_enabled=true; fi
 
-    jq -cn       --arg protocol vless --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid"       --arg flow "$flow" --arg security "$security" --arg sni "$sni" --arg type "$type"       --arg path "$path" --arg host "$host" --arg service_name "$service_name" --arg fp "$fp"       --arg pbk "$pbk" --arg sid "$sid" --arg alpn "$alpn" --arg name "$name"       --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" '
+    jq -cn \
+      --arg protocol vless --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid" \
+      --arg flow "$flow" --arg security "$security" --arg sni "$sni" --arg type "$type" \
+      --arg path "$path" --arg host "$host" --arg service_name "$service_name" --arg fp "$fp" \
+      --arg pbk "$pbk" --arg sid "$sid" --arg alpn "$alpn" --arg name "$name" \
+      --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" '
       {
         schema_version:1, protocol:$protocol, server:$server, server_port:$server_port, uuid:$uuid,
         flow:(if $flow!="" then $flow else null end),
