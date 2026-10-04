@@ -21,10 +21,17 @@ load_core() {
     . "$MANAGER_LIB/config/version.sh" || return 1
 }
 get_proxy_url() { uci -q get singbox.main.proxy_url 2>/dev/null; }
+get_bool_option() {
+    value=$(uci -q get "singbox.main.$1" 2>/dev/null || true)
+    case "$value" in
+        1|yes|true) printf '1\n' ;;
+        *) printf '0\n' ;;
+    esac
+}
 set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; }
 sync_autostart() {
-    case "$(uci -q get singbox.main.auto_start 2>/dev/null)" in
-        1|yes|true) "$INIT" enable ;;
+    case "$(get_bool_option auto_start)" in
+        1) "$INIT" enable ;;
         *) "$INIT" disable ;;
     esac
 }
@@ -36,7 +43,10 @@ routing_exists() {
         ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'
 }
 process_running() { "$INIT" running >/dev/null 2>&1; }
-connectivity_test() { command -v wget >/dev/null 2>&1 || return 1; wget -q -T 8 -O /dev/null https://api.ipify.org; }
+connectivity_test() {
+    command -v uclient-fetch >/dev/null 2>&1 || return 1
+    uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1
+}
 
 validate() {
     config_valid && printf '%s\n' 'Configuration: valid' && return 0
@@ -65,19 +75,46 @@ cancel_rollback_timer() {
     case "$pid" in *[!0-9]*|'') ;; *) kill "$pid" 2>/dev/null || true ;; esac
     rm -f "$ROLLBACK_PID"
 }
+read_pending_state() {
+    PENDING_ENABLED=0
+    PENDING_AUTOSTART=0
+    PENDING_HAD_CONFIG=0
+    [ -f "$PENDING" ] || return 1
+    while IFS='=' read -r key value; do
+        case "$key" in
+            enabled) case "$value" in 0|1) PENDING_ENABLED=$value ;; esac ;;
+            auto_start) case "$value" in 0|1) PENDING_AUTOSTART=$value ;; esac ;;
+            had_config) case "$value" in 0|1) PENDING_HAD_CONFIG=$value ;; esac ;;
+        esac
+    done < "$PENDING"
+}
+restore_pending_state() {
+    read_pending_state || return 1
+    if [ "$PENDING_HAD_CONFIG" -eq 1 ]; then
+        [ -f "$BACKUP" ] || return 1
+        restore_backup "$CONFIG" "$BACKUP" || return 1
+    else
+        rm -f "$CONFIG"
+    fi
+    set_enabled "$PENDING_ENABLED" || return 1
+    uci set singbox.main.auto_start="$PENDING_AUTOSTART" || return 1
+    uci commit singbox || return 1
+    sync_autostart || true
+    rm -f "$PENDING"
+}
 rollback_pending() {
     load_core || return 1
     cancel_rollback_timer
-    [ -f "$BACKUP" ] || return 1
-    restore_backup "$CONFIG" "$BACKUP" || return 1
-    rm -f "$PENDING"
-    set_enabled 1 || return 1
-    sync_autostart || true
+    restore_pending_state || return 1
     "$INIT" restart
 }
 schedule_rollback() {
     cancel_rollback_timer
-    printf '%s\n' pending > "$PENDING" || return 1
+    printf '%s\n' \
+        "enabled=$PREVIOUS_ENABLED" \
+        "auto_start=$PREVIOUS_AUTOSTART" \
+        "had_config=$PREVIOUS_HAD_CONFIG" > "$PENDING" || return 1
+    chmod 600 "$PENDING" 2>/dev/null || true
     (
         sleep "$ROLLBACK_DELAY"
         [ -f "$PENDING" ] || exit 0
@@ -116,7 +153,7 @@ verify_runtime() {
 confirm() {
     [ -f "$PENDING" ] || return 0
     cancel_rollback_timer
-    rm -f "$PENDING"
+    rm -f "$PENDING" "$BACKUP"
     printf '%s\n' 'Configuration confirmed'
 }
 apply() {
@@ -127,31 +164,76 @@ apply() {
     protocol=$(detect_protocol "$url") || { printf '%s\n' 'Unsupported proxy protocol' >&2; return 1; }
     case "$protocol" in
         vmess) profile=$(vmess_parse "$url") || return 1 ;;
-        vless) profile=$(vless_parse "$url") || return 1 ;;
+        vless)
+            if [ "$(get_bool_option allow_insecure)" -eq 1 ]; then
+                profile=$(VLESS_ALLOW_INSECURE=1 vless_parse "$url") || return 1
+            else
+                profile=$(vless_parse "$url") || return 1
+            fi
+            ;;
         *) printf '%s\n' 'Unsupported proxy protocol' >&2; return 1 ;;
     esac
     config=$(generate_config "$profile") || return 1
     umask 077
     mkdir -p "$CONFIG_DIR" || return 1
+
+    PREVIOUS_ENABLED=$(get_bool_option enabled)
+    PREVIOUS_AUTOSTART=$(get_bool_option auto_start)
+    if [ -f "$CONFIG" ]; then
+        PREVIOUS_HAD_CONFIG=1
+    else
+        PREVIOUS_HAD_CONFIG=0
+    fi
+
     printf '%s' "$config" > "$CANDIDATE" || return 1
     chmod 600 "$CANDIDATE" || { rm -f "$CANDIDATE"; return 1; }
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || return 1
+
     set_enabled 1 || return 1
     sync_autostart || true
     if ! "$INIT" restart; then
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
-        set_enabled 0 >/dev/null 2>&1 || true
+        if [ "$PREVIOUS_HAD_CONFIG" -eq 1 ]; then
+            restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        else
+            rm -f "$CONFIG"
+        fi
+        set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
+        uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci commit singbox >/dev/null 2>&1 || true
+        sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
         return 1
     fi
+
     if ! verify_runtime; then
         printf '%s\n' 'Runtime verification failed; restoring previous configuration' >&2
-        restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
-        set_enabled 0 >/dev/null 2>&1 || true
+        if [ "$PREVIOUS_HAD_CONFIG" -eq 1 ]; then
+            restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        else
+            rm -f "$CONFIG"
+        fi
+        set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
+        uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci commit singbox >/dev/null 2>&1 || true
+        sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
         return 1
     fi
-    schedule_rollback || return 1
+
+    if ! schedule_rollback; then
+        printf '%s\n' 'Unable to start rollback timer; restoring previous configuration' >&2
+        if [ "$PREVIOUS_HAD_CONFIG" -eq 1 ]; then
+            restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
+        else
+            rm -f "$CONFIG"
+        fi
+        set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
+        uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
+        uci commit singbox >/dev/null 2>&1 || true
+        sync_autostart || true
+        "$INIT" restart >/dev/null 2>&1 || true
+        return 1
+    fi
     printf '%s\n' 'Configuration applied; confirmation required'
 }
 recovery() {
@@ -159,15 +241,19 @@ recovery() {
     cancel_rollback_timer
     "$INIT" stop >/dev/null 2>&1 || true
     [ ! -x "$FIREWALL" ] || "$FIREWALL" cleanup >/dev/null 2>&1 || true
-    if [ -f "$BACKUP" ]; then
+    if [ -f "$PENDING" ]; then
+        restore_pending_state || return 1
+        "$INIT" restart
+    elif [ -f "$BACKUP" ]; then
         restore_backup "$CONFIG" "$BACKUP" || return 1
-        rm -f "$PENDING"
+        rm -f "$BACKUP"
         set_enabled 1 || return 1
         sync_autostart || true
         "$INIT" restart
     else
-        rm -f "$PENDING"
+        rm -f "$CONFIG"
         set_enabled 0 || return 1
+        sync_autostart || true
         "$INIT" stop
     fi
 }
