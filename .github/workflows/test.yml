@@ -26,3 +26,4 @@ jobs:
           sh ./tests/network/test_firewall.sh
           sh ./tests/config/test_runtime_policy.sh
           sh ./tests/config/test_version.sh
+      # Explicitly run tests through sh; executable bits are not part of the test contract.
