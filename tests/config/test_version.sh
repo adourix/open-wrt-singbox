@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+ROOT=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+# shellcheck source=../../core/config/version.sh
 . "$ROOT/core/config/version.sh"
 SINGBOX_TEMPLATE_DIR="$ROOT/core/config/templates"
 export SINGBOX_TEMPLATE_DIR
@@ -23,6 +24,8 @@ cat > "$TMP/sing-box" <<'EOF'
 #!/bin/sh
 echo 'sing-box version 1.14.0'
 EOF
-check_singbox_version && exit 1 || true
+if check_singbox_version; then
+    exit 1
+fi
 
 echo "version tests: PASS"
