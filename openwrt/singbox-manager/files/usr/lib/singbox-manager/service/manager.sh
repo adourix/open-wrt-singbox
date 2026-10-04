@@ -103,7 +103,7 @@ restore_pending_state() {
     uci set singbox.main.proxy_url="$PENDING_PROXY_URL" || return 1
     uci commit singbox || return 1
     sync_autostart || true
-    rm -f "$PENDING"
+    rm -f "$PENDING" "$BACKUP"
 }
 rollback_pending() {
     load_core || return 1
@@ -132,10 +132,12 @@ start() {
     "$INIT" start
 }
 stop() {
+    if [ -f "$PENDING" ]; then
+        restore_pending_state || return 1
+    fi
     set_enabled 0 || return 1
     "$INIT" stop
     cancel_rollback_timer
-    rm -f "$PENDING"
 }
 restart() {
     set_enabled 1 || return 1
