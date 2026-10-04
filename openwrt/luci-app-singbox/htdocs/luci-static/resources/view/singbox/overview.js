@@ -8,6 +8,7 @@ var callSave = rpc.declare({ object: 'luci.singbox', method: 'save', params: { p
 var callApply = rpc.declare({ object: 'luci.singbox', method: 'apply', expect: { '': {} } });
 var callEnabled = rpc.declare({ object: 'luci.singbox', method: 'set_enabled', params: { enabled: true } });
 var callLogs = rpc.declare({ object: 'luci.singbox', method: 'logs', expect: { '': {} } });
+var callConfirm = rpc.declare({ object: 'luci.singbox', method: 'confirm', expect: { '': {} } });
 
 return view.extend({
     load: function() {
@@ -32,7 +33,8 @@ return view.extend({
                 ['Process', s.running ? 'OK' : 'STOPPED'],
                 ['Configuration', s.configuration_valid ? 'OK' : 'ERROR'],
                 ['TUN', s.tun ? 'OK' : 'ERROR'],
-                ['Routing', s.routing ? 'OK' : 'ERROR']
+                ['Routing', s.routing ? 'OK' : 'ERROR'],
+                ['Apply', s.pending ? 'AWAITING CONFIRMATION' : 'CONFIRMED']
             ].forEach(function (f) {
                 statusBox.appendChild(E('div', {}, [
                     E('strong', {}, [_(f[0] + ': ')]),
@@ -72,6 +74,18 @@ return view.extend({
             }
         }, [_('Save & Apply')]);
 
+        var confirm = E('button', {
+            class: 'cbi-button cbi-button-action',
+            click: function() {
+                return callConfirm().then(function() {
+                    ui.addNotification(null, E('p', _('Configuration confirmed.')), 'info');
+                    return callStatus();
+                }).then(updateStatus).catch(function() {
+                    ui.addNotification(null, E('p', _('No pending configuration to confirm.')), 'error');
+                });
+            }
+        }, [_('Confirm Apply')]);
+
         var toggle = E('button', {
             class: 'cbi-button cbi-button-action',
             click: function() {
@@ -100,7 +114,7 @@ return view.extend({
                     E('label', { class: 'cbi-value-title' }, [_('Auto Start')]),
                     E('div', { class: 'cbi-value-field' }, [auto])
                 ]),
-                E('div', { class: 'cbi-page-actions' }, [save, apply, toggle])
+                E('div', { class: 'cbi-page-actions' }, [save, apply, confirm, toggle])
             ]),
             E('h3', {}, [_('Status')]),
             statusBox,
