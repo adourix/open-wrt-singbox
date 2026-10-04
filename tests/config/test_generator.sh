@@ -2,9 +2,13 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+# shellcheck source=../../core/config/generator.sh
 . "$ROOT/core/config/generator.sh"
 
 fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
+
+TMPDIR=${TMPDIR:-/tmp}
+export TMPDIR
 
 uuid=550e8400-e29b-41d4-a716-446655440000
 
@@ -44,7 +48,6 @@ if generate_config "$bad_transport" >/dev/null 2>/dev/null; then
 fi
 
 printf '%s\n' "Config generator tests: PASS"
-
 
 # Sensitive input must not be emitted into diagnostics by the generator.
 malicious=$(printf '%s' "$profile" | jq --arg s '$(touch /tmp/pwned)' '.server=$s')
