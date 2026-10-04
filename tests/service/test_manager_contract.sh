@@ -20,4 +20,8 @@ grep -F 'restore_current_config || return 1' "$MANAGER" >/dev/null
 
 grep -F 'Current configuration failed runtime verification; rolling back' "$MANAGER" >/dev/null
 
+# The rollback worker must not kill itself when it clears its PID file.
+grep -F 'ROLLBACK_TIMER_CHILD=1 rollback_pending' "$MANAGER" >/dev/null
+grep -F 'ROLLBACK_TIMER_CHILD' "$MANAGER" >/dev/null
+
 printf '%s\n' 'manager lifecycle contract tests: PASS'
