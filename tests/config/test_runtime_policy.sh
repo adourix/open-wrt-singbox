@@ -34,7 +34,6 @@ grep -F '+uclient-fetch' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || 
     echo "uclient-fetch runtime dependency is missing" >&2
     exit 1
 }
-
 grep -F '+kmod-tun' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || {
     echo "kmod-tun runtime dependency is missing" >&2
     exit 1
@@ -48,7 +47,7 @@ grep -F '+kmod-inet-diag' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null ||
     exit 1
 }
 
-grep -F 'option allow_insecure '\''0'\''' "$ROOT/openwrt/singbox-manager/files/etc/config/singbox" >/dev/null || {
+grep -F "option allow_insecure '0'" "$ROOT/openwrt/singbox-manager/files/etc/config/singbox" >/dev/null || {
     echo "explicit insecure TLS opt-in default is missing" >&2
     exit 1
 }
