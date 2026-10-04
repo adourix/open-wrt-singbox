@@ -13,3 +13,7 @@ grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|
 } || true
 
 echo "runtime policy tests: PASS"
+
+# Source-of-truth mirror check
+pairs="\ncore/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh\ncore/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh\ncore/protocol/vless/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh\ncore/config/generator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/generator.sh\ncore/config/validator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/validator.sh\ncore/config/version.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/version.sh\ncore/network/firewall.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/network/firewall.sh\ncore/service/manager.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh\n"
+printf '%s\n' "$pairs" | while IFS='|' read -r core packaged; do [ "$core" ] || continue; cmp -s "$ROOT/$core" "$ROOT/$packaged" || { echo "source-of-truth mismatch: $core != $packaged" >&2; exit 1; }; done

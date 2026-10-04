@@ -11,7 +11,7 @@ define Package/singbox-manager
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Lightweight sing-box manager
-  DEPENDS:=+sing-box +jq +nftables
+  DEPENDS:=+sing-box +jq +nftables +wget
 endef
 
 define Package/singbox-manager/description
