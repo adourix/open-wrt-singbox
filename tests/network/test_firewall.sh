@@ -10,7 +10,7 @@ trap 'rm -rf "$TMP"' EXIT
 cat > "$TMP/nft" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$*" >> "$NFT_LOG"
-case "$1 $2 $3 $4" in
+case "$1 $2 $3 $4 $5" in
   "list table inet singbox"|"list chain inet singbox forward") exit 1 ;;
   *) exit 0 ;;
 esac
