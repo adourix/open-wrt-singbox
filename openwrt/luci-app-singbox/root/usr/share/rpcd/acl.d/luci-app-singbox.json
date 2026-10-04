@@ -1,0 +1,17 @@
+{
+  "luci-app-singbox": {
+    "description": "Allow LuCI to manage singbox",
+    "read": {
+      "ubus": {
+        "luci.singbox": ["status", "health", "logs"]
+      },
+      "uci": ["singbox"]
+    },
+    "write": {
+      "ubus": {
+        "luci.singbox": ["save", "apply", "set_enabled"]
+      },
+      "uci": ["singbox"]
+    }
+  }
+}
