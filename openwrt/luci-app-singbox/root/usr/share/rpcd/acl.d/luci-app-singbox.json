@@ -8,7 +8,7 @@
     },
     "write": {
       "ubus": {
-        "luci.singbox": ["save", "apply", "set_enabled"]
+        "luci.singbox": ["apply", "start", "stop", "set_enabled", "confirm"]
       }
     }
   }
