@@ -65,12 +65,18 @@ vless_parse() {
         { vless_error "Invalid VLESS UUID"; return 1; }
 
     case "$authority" in
-        \[*\]:*) server=${authority#\[}; server=${server%%\]}; port=${authority##*\]:};;
+        \[*\]:*)
+            server=${authority#\[}
+            server=${server%%\]:*}
+            port=${authority##*\]:}
+            ;;
         *:*) server=${authority%:*}; port=${authority##*:};;
         *) vless_error "Invalid VLESS port"; return 1;;
     esac
-    case "$server" in *:*) ;; esac
-    case "$authority" in *:*:* ) case "$authority" in \[*\]:*) ;; *) vless_error "IPv6 server must use brackets"; return 1;; esac;; esac
+    case "$authority" in *:*:*)
+        case "$authority" in \[*\]:*) ;; *) vless_error "IPv6 server must use brackets"; return 1;; esac
+        ;;
+    esac
     [ -n "$server" ] || { vless_error "Missing VLESS server"; return 1; }
     printf '%s' "$server" | grep -Eq '^[A-Za-z0-9._:-]+$' ||
         { vless_error "Invalid VLESS server"; return 1; }
