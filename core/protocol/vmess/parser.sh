@@ -57,7 +57,7 @@ vmess_parse() {
     printf '%s' "$uuid" | grep -Eq '^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$' ||
         { vmess_error "Invalid VMess UUID"; return 1; }
 
-    port=$(printf '%s' "$decoded" | jq -er 'if (.port|type)=="number" then tostring elif (.port|type)=="string" then . else error end') ||
+    port=$(printf '%s' "$decoded" | jq -er 'if (.port|type)=="number" then (.port|tostring) elif (.port|type)=="string" then .port else error end') ||
         { vmess_error "Invalid VMess port"; return 1; }
     printf '%s' "$port" | grep -Eq '^[0-9]+$' ||
         { vmess_error "Invalid VMess port"; return 1; }
