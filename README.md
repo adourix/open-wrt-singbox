@@ -8,4 +8,4 @@ The project accepts VMess and VLESS share URLs, detects the protocol automatical
 
 Phase 1 starts with protocol detection and parsers. The core is designed to run without LuCI and without a permanent application server.
 
-See [PROJECT.md](PROJECT.md) for the full specification.
+See the project specification supplied with this repository, and `docs/openwrt.md` for the pinned OpenWrt/sing-box runtime contract.
