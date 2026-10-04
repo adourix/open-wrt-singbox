@@ -18,7 +18,7 @@ status_json() {
 
 case "$1" in
 list)
-    printf '%s\n' '{"status":{},"save":{"proxy_url":"","auto_start":true,"ipv6_policy":""},"apply":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
+    printf '%s\n' '{"status":{},"preview":{"proxy_url":""},"save":{"proxy_url":"","auto_start":true,"ipv6_policy":""},"apply":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}'
     ;;
 call)
     case "$2" in
@@ -29,6 +29,26 @@ call)
         "$MANAGER" health >/dev/null 2>&1; rc=$?
         status_json | jq --argjson ok "$([ "$rc" -eq 0 ] && echo true || echo false)" '. + {ok:$ok}'
         [ "$rc" -eq 0 ] || exit 1
+        ;;
+    preview)
+        input=$(cat)
+        proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || exit 1
+        [ -n "$proxy_url" ] || exit 1
+        . /usr/lib/singbox-manager/protocol/detector.sh
+        . /usr/lib/singbox-manager/protocol/vmess/parser.sh
+        . /usr/lib/singbox-manager/protocol/vless/parser.sh
+        protocol=$(detect_protocol "$proxy_url") || exit 1
+        case "$protocol" in
+            vmess) profile=$(vmess_parse "$proxy_url") || exit 1 ;;
+            vless) profile=$(vless_parse "$proxy_url") || exit 1 ;;
+            *) exit 1 ;;
+        esac
+        printf '%s' "$profile" | jq -c '{
+            protocol, server, server_port,
+            transport: .transport.type,
+            tls: .tls.enabled,
+            name: .metadata.name
+        }'
         ;;
     save)
         input=$(cat)
