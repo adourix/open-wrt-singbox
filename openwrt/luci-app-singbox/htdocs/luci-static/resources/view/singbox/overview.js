@@ -4,17 +4,22 @@
 'require ui';
 
 var callStatus = rpc.declare({ object: 'luci.singbox', method: 'status', expect: { '': {} } });
-var callPreview = rpc.declare({ object: 'luci.singbox', method: 'preview', params: { proxy_url: '' } });
-var callSave = rpc.declare({ object: 'luci.singbox', method: 'save', params: { proxy_url: '', auto_start: true, ipv6_policy: '' } });
-var callApply = rpc.declare({ object: 'luci.singbox', method: 'apply', expect: { '': {} } });
+var callPreview = rpc.declare({ object: 'luci.singbox', method: 'preview', params: { proxy_url: '', allow_insecure: false } });
+var callSave = rpc.declare({ object: 'luci.singbox', method: 'save', params: { proxy_url: '', auto_start: true, allow_insecure: false, ipv6_policy: '' } });
+var callApply = rpc.declare({ object: 'luci.singbox', method: 'apply', params: { proxy_url: '', auto_start: true, allow_insecure: false, ipv6_policy: '' } });
 var callEnabled = rpc.declare({ object: 'luci.singbox', method: 'set_enabled', params: { enabled: true } });
 var callLogs = rpc.declare({ object: 'luci.singbox', method: 'logs', expect: { '': {} } });
 var callConfirm = rpc.declare({ object: 'luci.singbox', method: 'confirm', expect: { '': {} } });
 
 return view.extend({
+    handleSave: null,
+    handleSaveApply: null,
+    handleReset: null,
+
     load: function() {
         return Promise.all([callStatus(), callLogs()]);
     },
+
     render: function(data) {
         var status = data[0] || {};
         var logs = data[1] || { lines: [] };
@@ -22,10 +27,13 @@ return view.extend({
             type: 'password',
             class: 'cbi-input-text',
             autocomplete: 'off',
+            spellcheck: false,
             placeholder: 'vmess:// or vless://'
         });
         var previewBox = E('div', { class: 'cbi-section' });
         var auto = E('input', { type: 'checkbox', checked: !!status.auto_start });
+        var allowInsecure = E('input', { type: 'checkbox', checked: !!status.allow_insecure });
+        var confirm;
 
         var statusBox = E('div', { class: 'cbi-section' });
         function updateStatus(s) {
@@ -38,21 +46,30 @@ return view.extend({
                 ['TUN', status.tun ? 'OK' : 'ERROR'],
                 ['Routing', status.routing ? 'OK' : 'ERROR'],
                 ['Apply', status.pending ? 'AWAITING CONFIRMATION' : 'CONFIRMED']
-            ].forEach(function (f) {
+            ].forEach(function(f) {
                 statusBox.appendChild(E('div', {}, [
                     E('strong', {}, [_(f[0] + ': ')]),
                     document.createTextNode(f[1])
                 ]));
             });
             auto.checked = !!status.auto_start;
+            allowInsecure.checked = !!status.allow_insecure;
+            if (confirm)
+                confirm.style.display = status.pending ? '' : 'none';
         }
 
         var preview = E('button', {
             class: 'cbi-button cbi-button-action',
             click: function() {
                 var value = url.value.trim();
-                if (!value) return;
-                return callPreview({ proxy_url: value }).then(function(p) {
+                if (!value) {
+                    ui.addNotification(null, E('p', _('Proxy URL is required.')), 'error');
+                    return;
+                }
+                return callPreview({
+                    proxy_url: value,
+                    allow_insecure: allowInsecure.checked
+                }).then(function(p) {
                     previewBox.innerHTML = '';
                     [
                         ['Protocol', p.protocol],
@@ -65,7 +82,7 @@ return view.extend({
                         previewBox.appendChild(E('div', {}, [
                             E('strong', {}, [_(f[0] + ': ')]),
                             document.createTextNode(String(f[1]))
-                        ]));
+                        ]);
                     });
                 }).catch(function() {
                     previewBox.innerHTML = '';
@@ -82,36 +99,64 @@ return view.extend({
                     ui.addNotification(null, E('p', _('Proxy URL is required.')), 'error');
                     return;
                 }
-                return callSave({ proxy_url: value, auto_start: auto.checked, ipv6_policy: 'block' })
-                    .then(function() {
-                        url.value = '';
-                        ui.addNotification(null, E('p', _('Configuration saved.')), 'info');
-                    })
-                    .catch(function() {
-                        ui.addNotification(null, E('p', _('Failed to save configuration.')), 'error');
-                    });
+                return callSave({
+                    proxy_url: value,
+                    auto_start: auto.checked,
+                    allow_insecure: allowInsecure.checked,
+                    ipv6_policy: 'block'
+                }).then(function() {
+                    url.value = '';
+                    return callStatus();
+                }).then(updateStatus).then(function() {
+                    ui.addNotification(null, E('p', _('Configuration saved.')), 'info');
+                }).catch(function() {
+                    ui.addNotification(null, E('p', _('Failed to save configuration.')), 'error');
+                });
             }
         }, [_('Save')]);
 
         var apply = E('button', {
             class: 'cbi-button cbi-button-apply',
             click: function() {
-                return callApply().then(function() {
-                    ui.addNotification(null, E('p', _('Configuration applied.')), 'info');
-                    return callStatus();
-                }).then(updateStatus).catch(function() {
-                    ui.addNotification(null, E('p', _('Failed to apply configuration.')), 'error');
+                var value = url.value.trim();
+                if (!value) {
+                    ui.addNotification(null, E('p', _('Proxy URL is required.')), 'error');
+                    return;
+                }
+                return callApply({
+                    proxy_url: value,
+                    auto_start: auto.checked,
+                    allow_insecure: allowInsecure.checked,
+                    ipv6_policy: 'block'
+                }).then(function() {
+                    url.value = '';
+                    return Promise.all([callStatus(), callLogs()]);
+                }).then(function(result) {
+                    updateStatus(result[0]);
+                    logBox.textContent = (result[1].lines || []).join('\n');
+                    ui.addNotification(null, E('p', _('Configuration applied. Confirm it before the rollback timer expires.')), 'info');
+                }).catch(function() {
+                    return Promise.all([callStatus(), callLogs()]).then(function(result) {
+                        updateStatus(result[0]);
+                        logBox.textContent = (result[1].lines || []).join('\n');
+                    }).then(function() {
+                        ui.addNotification(null, E('p', _('Failed to apply configuration. The previous working configuration was restored.')), 'error');
+                    });
                 });
             }
         }, [_('Save & Apply')]);
 
-        var confirm = E('button', {
+        confirm = E('button', {
             class: 'cbi-button cbi-button-action',
+            style: status.pending ? '' : 'display:none',
             click: function() {
                 return callConfirm().then(function() {
+                    return Promise.all([callStatus(), callLogs()]);
+                }).then(function(result) {
+                    updateStatus(result[0]);
+                    logBox.textContent = (result[1].lines || []).join('\n');
                     ui.addNotification(null, E('p', _('Configuration confirmed.')), 'info');
-                    return callStatus();
-                }).then(updateStatus).catch(function() {
+                }).catch(function() {
                     ui.addNotification(null, E('p', _('No pending configuration to confirm.')), 'error');
                 });
             }
@@ -122,8 +167,13 @@ return view.extend({
             click: function() {
                 var next = !status.enabled;
                 return callEnabled({ enabled: next }).then(function() {
-                    return callStatus();
-                }).then(updateStatus);
+                    return Promise.all([callStatus(), callLogs()]);
+                }).then(function(result) {
+                    updateStatus(result[0]);
+                    logBox.textContent = (result[1].lines || []).join('\n');
+                }).catch(function() {
+                    ui.addNotification(null, E('p', _('Failed to change Sing-box state.')), 'error');
+                });
             }
         }, [_('ON / OFF')]);
 
@@ -133,7 +183,7 @@ return view.extend({
 
         updateStatus(status);
 
-        return E('div', { class: 'cbi-map' }, [
+        return E('div', { class: 'singbox-view' }, [
             E('h2', {}, [_('Sing-box')]),
             E('div', { class: 'cbi-section' }, [
                 E('div', { class: 'cbi-value' }, [
@@ -143,6 +193,13 @@ return view.extend({
                 E('div', { class: 'cbi-value' }, [
                     E('label', { class: 'cbi-value-title' }, [_('Auto Start')]),
                     E('div', { class: 'cbi-value-field' }, [auto])
+                ]),
+                E('div', { class: 'cbi-value' }, [
+                    E('label', { class: 'cbi-value-title' }, [_('Allow Insecure TLS')]),
+                    E('div', { class: 'cbi-value-field' }, [
+                        allowInsecure,
+                        E('span', { style: 'margin-left:8px;' }, [_('Explicitly allow allowInsecure/insecure in VLESS URLs')])
+                    ])
                 ]),
                 E('div', { class: 'cbi-page-actions' }, [preview, save, apply, confirm, toggle])
             ]),
