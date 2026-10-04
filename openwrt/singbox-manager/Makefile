@@ -2,6 +2,8 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=singbox-manager
 PKG_RELEASE:=1
+PKG_LICENSE:=MIT
+PKG_MAINTAINER:=Abdulrahman Ayad
 
 include $(INCLUDE_DIR)/package.mk
 
