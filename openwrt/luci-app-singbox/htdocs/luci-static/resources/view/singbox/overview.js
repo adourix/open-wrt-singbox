@@ -20,10 +20,14 @@ var callApply = rpc.declare({
 	params: { proxy_url: '', auto_start: true, allow_insecure: false },
 	expect: { '': {} }
 });
-var callEnabled = rpc.declare({
+var callStart = rpc.declare({
 	object: 'luci.singbox',
-	method: 'set_enabled',
-	params: { enabled: true },
+	method: 'start',
+	expect: { '': {} }
+});
+var callStop = rpc.declare({
+	object: 'luci.singbox',
+	method: 'stop',
 	expect: { '': {} }
 });
 var callConfirm = rpc.declare({
@@ -66,11 +70,12 @@ return view.extend({
 		});
 		var allowInsecure = E('input', {
 			type: 'checkbox',
-			checked: false
+			checked: !!status.allow_insecure
 		});
 		var previewBox = E('div', { class: 'cbi-section' });
 		var statusBox = E('div', { class: 'cbi-section' });
 		var actionBox = E('div', { class: 'cbi-page-actions' });
+		var confirmBox = E('span', { style: 'margin-right:0.5em' });
 		var logBox = E('pre', {
 			style: 'max-height:240px;overflow:auto;white-space:pre-wrap;'
 		}, [document.createTextNode((logs.lines || []).join('\n'))]);
@@ -79,15 +84,24 @@ return view.extend({
 			return result && result.error ? result.error : fallback;
 		}
 
+		function refresh() {
+			return Promise.all([callStatus(), callLogs()]).then(function(results) {
+				setStatus(results[0]);
+				logBox.textContent = (results[1].lines || []).join('\n');
+				return results[0];
+			});
+		}
+
 		function setStatus(next) {
 			status = next || {};
 			statusBox.innerHTML = '';
-			var processState = status.running ? 'Running' : (status.enabled ? 'Error' : 'Stopped');
+
+			var state = status.state || (status.running ? 'RUNNING' : (status.enabled ? 'ERROR' : 'STOPPED'));
 			var fields = [
-				['Status', processState],
+				['Status', state.charAt(0) + state.slice(1).toLowerCase()],
 				['Configuration', status.configuration_valid ? 'Valid' : 'Error'],
-				['TUN', status.tun ? 'OK' : 'Error'],
-				['Routing', status.routing ? 'OK' : 'Error']
+				['TUN', status.running ? (status.tun ? 'OK' : 'Error') : 'Inactive'],
+				['Routing', status.running ? (status.routing ? 'OK' : 'Error') : 'Inactive']
 			];
 			if (status.protocol) fields.push(['Protocol', status.protocol.toUpperCase()]);
 			if (status.server) fields.push(['Server', status.server]);
@@ -103,25 +117,27 @@ return view.extend({
 			});
 
 			auto.checked = !!status.auto_start;
+			allowInsecure.checked = !!status.allow_insecure;
 			url.placeholder = status.configured ? _('Saved - hidden') : _('vmess:// or vless://');
-			actionBox.innerHTML = '';
+
+			confirmBox.innerHTML = '';
 			if (status.pending) {
-				actionBox.appendChild(button('Confirm', 'cbi-button-action', function() {
+				confirmBox.appendChild(button('Confirm', 'cbi-button-action', function() {
 					return callConfirm().then(function(result) {
-						if (result && result.ok === false)
+						if (!result || result.ok !== true)
 							throw new Error(errorText(result, _('Confirmation failed.')));
-						return callStatus();
-					}).then(setStatus).catch(function(err) {
+						ui.addNotification(null, E('p', [_('Configuration confirmed.')]), 'info');
+						return refresh();
+					}).catch(function(err) {
 						ui.addNotification(null, E('p', [_(err.message || _('Confirmation failed.'))]), 'error');
+						return refresh();
 					});
 				}));
 			}
-		}
 
-		function refreshLogs() {
-			return callLogs().then(function(result) {
-				logBox.textContent = (result.lines || []).join('\n');
-			});
+			startButton.disabled = !!status.running || !status.configured || !!status.pending;
+			stopButton.disabled = !status.running;
+			apply.disabled = !!status.pending;
 		}
 
 		var preview = button('Detect / Preview', 'cbi-button-action', function() {
@@ -134,7 +150,7 @@ return view.extend({
 				proxy_url: value,
 				allow_insecure: !!allowInsecure.checked
 			}).then(function(result) {
-				if (result && result.ok === false)
+				if (!result || result.ok === false)
 					throw new Error(errorText(result, _('Invalid or unsupported proxy URL.')));
 				previewBox.innerHTML = '';
 				[
@@ -172,28 +188,32 @@ return view.extend({
 				url.value = '';
 				previewBox.innerHTML = '';
 				ui.addNotification(null, E('p', [_('Configuration applied. Confirm it before the safety timer expires.')]), 'info');
-				return Promise.all([callStatus(), refreshLogs()]);
-			}).then(function(results) {
-				setStatus(results[0]);
+				return refresh();
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', [err.message || _('Failed to apply configuration.')]), 'error');
-				return Promise.all([callStatus(), refreshLogs()]).then(function(results) {
-					setStatus(results[0]);
-				});
+				return refresh();
 			});
 		});
 
-		var toggle = button(status.enabled ? 'OFF' : 'ON', 'cbi-button-action', function() {
-			var next = !status.enabled;
-			return callEnabled({ enabled: next }).then(function(result) {
+		var startButton = button('Start', 'cbi-button-action', function() {
+			return callStart().then(function(result) {
 				if (!result || result.ok !== true)
-					throw new Error(errorText(result, next ? _('Failed to start sing-box.') : _('Failed to stop sing-box.')));
-				return callStatus();
-			}).then(function(result) {
-				setStatus(result);
+					throw new Error(errorText(result, _('Failed to start sing-box.')));
+				return refresh();
 			}).catch(function(err) {
-				ui.addNotification(null, E('p', [err.message]), 'error');
-				return callStatus().then(setStatus);
+				ui.addNotification(null, E('p', [_(err.message || _('Failed to start sing-box.'))]), 'error');
+				return refresh();
+			});
+		});
+
+		var stopButton = button('Stop', 'cbi-button-negative', function() {
+			return callStop().then(function(result) {
+				if (!result || result.ok !== true)
+					throw new Error(errorText(result, _('Failed to stop sing-box.')));
+				return refresh();
+			}).catch(function(err) {
+				ui.addNotification(null, E('p', [_(err.message || _('Failed to stop sing-box.'))]), 'error');
+				return refresh();
 			});
 		});
 
@@ -226,7 +246,9 @@ return view.extend({
 
 		actionBox.appendChild(preview);
 		actionBox.appendChild(apply);
-		actionBox.appendChild(toggle);
+		actionBox.appendChild(confirmBox);
+		actionBox.appendChild(startButton);
+		actionBox.appendChild(stopButton);
 		setStatus(status);
 
 		return page;
