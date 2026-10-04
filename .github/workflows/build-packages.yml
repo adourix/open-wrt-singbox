@@ -51,9 +51,11 @@ jobs:
       - name: Prepare required feeds
         run: |
           cd "$SDK_DIR"
+          # Update only. Do NOT `feeds install` luci-base / sing-box / jq:
+          # installing them makes the SDK try to build them (and their
+          # dependencies) from source, which fails (lucihttp) or is very slow
+          # (sing-box). They stay runtime dependencies in the generated apk.
           ./scripts/feeds update packages luci
-          ./scripts/feeds install -p packages sing-box jq
-          ./scripts/feeds install -p luci luci-base
           test -f feeds/luci/luci.mk
           test -f feeds/packages/net/sing-box/Makefile || test -f feeds/packages/*/sing-box/Makefile
 
