@@ -37,7 +37,7 @@ jobs:
           table inet singbox {
               chain forward {
                   type filter hook forward priority -5; policy accept;
-                  iifname "br-lan" meta nfproto ipv6 drop
+                  iifname "lo" meta nfproto ipv6 drop
               }
           }
           EOF
