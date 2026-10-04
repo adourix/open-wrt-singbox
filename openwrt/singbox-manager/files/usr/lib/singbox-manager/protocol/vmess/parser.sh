@@ -24,6 +24,7 @@ vmess_parse() {
     url=$1
     [ -n "$url" ] || { vmess_error "Invalid VMess URL"; return 1; }
     [ ${#url} -le "$VMESS_MAX_INPUT" ] || { vmess_error "VMess URL is too long"; return 1; }
+    url=$(printf '%s' "$url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     case "$url" in vmess://*) ;; *) vmess_error "Invalid VMess URL"; return 1;; esac
 
     payload=${url#vmess://}
@@ -74,7 +75,7 @@ vmess_parse() {
         { vmess_error "Invalid VMess transport"; return 1; }
     case "$network" in tcp|ws|grpc) ;; *) vmess_error "Unsupported transport"; return 1;; esac
 
-    tls=$(printf '%s' "$decoded" | jq -er 'if .tls==null or .tls=="" then false elif (.tls|type)=="string" then ((ascii_downcase=="tls") or (ascii_downcase=="1") or (ascii_downcase=="true")) else error end') ||
+    tls=$(printf '%s' "$decoded" | jq -er 'if .tls==null or .tls=="" then false elif (.tls|type)=="string" then ((.tls|ascii_downcase)=="tls" or (.tls|ascii_downcase)=="1" or (.tls|ascii_downcase)=="true") else error end') ||
         { vmess_error "Invalid VMess TLS configuration"; return 1; }
     sni=$(printf '%s' "$decoded" | jq -er 'if .sni==null then "" else .sni end') || { vmess_error "Invalid VMess SNI"; return 1; }
     host=$(printf '%s' "$decoded" | jq -er 'if .host==null then "" else .host end') || { vmess_error "Invalid VMess host"; return 1; }
@@ -87,7 +88,10 @@ vmess_parse() {
         { vmess_error "Missing gRPC serviceName"; return 1; }
     [ "$network" != "ws" ] || [ -n "$path" ] || path="/"
 
-    jq -cn       --arg protocol vmess --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid"       --argjson alter_id "$aid" --arg security "$security" --arg network "$network" --argjson tls "$tls"       --arg sni "$sni" --arg host "$host" --arg path "$path" --arg name "$name" --arg fp "$fp" --arg service_name "$service_name" '
+    jq -cn \
+      --arg protocol vmess --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid" \
+      --argjson alter_id "$aid" --arg security "$security" --arg network "$network" --argjson tls "$tls" \
+      --arg sni "$sni" --arg host "$host" --arg path "$path" --arg name "$name" --arg fp "$fp" --arg service_name "$service_name" '
       {
         schema_version:1, protocol:$protocol, server:$server, server_port:$server_port, uuid:$uuid,
         alter_id:$alter_id, security:$security,
