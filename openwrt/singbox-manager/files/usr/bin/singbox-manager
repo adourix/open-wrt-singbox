@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/lib/singbox-manager/service/manager.sh "$@"
