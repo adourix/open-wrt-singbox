@@ -3,7 +3,7 @@ include $(TOPDIR)/rules.mk
 LUCI_TITLE:=LuCI support for sing-box manager
 LUCI_DEPENDS:=+luci-base +rpcd +singbox-manager
 PKG_LICENSE:=MIT
-PKG_MAINTAINER:=Abdulrahman Ayad
+LUCI_MAINTAINER:=Abdulrahman Ayad
 
 define Package/luci-app-singbox/postinst
 #!/bin/sh
