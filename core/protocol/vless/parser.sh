@@ -146,7 +146,7 @@ vless_parse() {
           elif $type=="grpc" then {type:"grpc",service_name:$service_name}
           else {type:"tcp"} end
         ),
-        metadata:{name:(if $name!="" then $name else null end)
+        metadata:{name:(if $name!="" then $name else null end)}
       }'
 }
 
