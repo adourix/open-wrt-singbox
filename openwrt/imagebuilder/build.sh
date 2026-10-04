@@ -7,6 +7,8 @@ set -eu
 
 PROFILE="${PROFILE:-generic}"
 PACKAGES="${PACKAGES:-sing-box jq nftables tailscale luci-base luci-mod-admin-full}"
+MANAGER_NAME=$(basename "$MANAGER_PKG" | cut -d_ -f1)
+LUCI_NAME=$(basename "$LUCI_PKG" | cut -d_ -f1)
 
 mkdir -p "$IMAGEBUILDER/packages"
 cp -f "$MANAGER_PKG" "$IMAGEBUILDER/packages/"
@@ -14,5 +16,5 @@ cp -f "$LUCI_PKG" "$IMAGEBUILDER/packages/"
 
 exec make -C "$IMAGEBUILDER" image \
     PROFILE="$PROFILE" \
-    PACKAGES="$PACKAGES $(basename "$MANAGER_PKG" | sed 's/-[0-9].*//' ) $(basename "$LUCI_PKG" | sed 's/-[0-9].*//' )" \
+    PACKAGES="$PACKAGES $MANAGER_NAME $LUCI_NAME" \
     FILES="$(CDPATH= cd -- "$(dirname -- "$0")/files" && pwd)"
