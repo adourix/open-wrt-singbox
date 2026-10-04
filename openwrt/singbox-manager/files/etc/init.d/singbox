@@ -1,0 +1,34 @@
+#!/bin/sh /etc/rc.common
+
+START=95
+USE_PROCD=1
+
+NAME=singbox
+PROG=/usr/bin/sing-box
+CONFIG=/etc/singbox/config.json
+
+start_service() {
+    config_load singbox 2>/dev/null || true
+    config_get_bool enabled main enabled 0
+    [ "$enabled" -eq 1 ] || return 0
+    [ -x "$PROG" ] || return 1
+    [ -f "$CONFIG" ] || return 1
+
+    "$PROG" check -c "$CONFIG" >/dev/null 2>&1 || return 1
+
+    procd_open_instance
+    procd_set_param command "$PROG" run -c "$CONFIG"
+    procd_set_param respawn 3600 5 5
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param file "$CONFIG"
+    procd_close_instance
+}
+
+stop_service() {
+    :
+}
+
+service_triggers() {
+    procd_add_reload_trigger singbox
+}
