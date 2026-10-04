@@ -15,6 +15,7 @@ read_pending_state() {
     PENDING_AUTOSTART=0
     PENDING_HAD_CONFIG=0
     PENDING_PROXY_URL=
+    PENDING_ALLOW_INSECURE=0
     PENDING_HAVE_PROXY=0
     [ -f "$PENDING" ] || return 1
     while IFS='=' read -r key value; do
@@ -23,6 +24,7 @@ read_pending_state() {
             auto_start) case "$value" in 0|1) PENDING_AUTOSTART=$value ;; esac ;;
             had_config) case "$value" in 0|1) PENDING_HAD_CONFIG=$value ;; esac ;;
             proxy_url) PENDING_PROXY_URL=$value; PENDING_HAVE_PROXY=1 ;;
+            allow_insecure) case "$value" in 0|1) PENDING_ALLOW_INSECURE=$value ;; esac ;;
         esac
     done < "$PENDING"
     [ "$PENDING_HAVE_PROXY" -eq 1 ] || return 1
@@ -50,6 +52,7 @@ recover_pending_config() {
     uci set singbox.main.enabled="$PENDING_ENABLED" || return 1
     uci set singbox.main.auto_start="$PENDING_AUTOSTART" || return 1
     uci set singbox.main.proxy_url="$PENDING_PROXY_URL" || return 1
+    uci set singbox.main.allow_insecure="$PENDING_ALLOW_INSECURE" || return 1
     uci commit singbox || return 1
 
     case "$PENDING_AUTOSTART" in
