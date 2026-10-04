@@ -24,6 +24,13 @@ printf '%s\n' "$out" | jq -e '
  and .outbounds[0].uuid=="550e8400-e29b-41d4-a716-446655440000"
  and .outbounds[0].tls.enabled==true
  and .outbounds[0].transport.type=="ws"
+ and .inbounds[0].type=="tun"
+ and .inbounds[0].auto_route==true
+ and .inbounds[0].auto_redirect==true
+ and .inbounds[0].strict_route==false
+ and .route.rules[0].action=="sniff"
+ and .route.rules[1].action=="hijack-dns"
+ and .dns.strategy=="ipv4_only"
 ' >/dev/null || fail "VLESS generation"
 
 bad='{"schema_version":1,"protocol":"trojan"}'
@@ -37,3 +44,14 @@ if generate_config "$bad_transport" >/dev/null 2>/dev/null; then
 fi
 
 printf '%s\n' "Config generator tests: PASS"
+
+
+# Sensitive input must not be emitted into diagnostics by the generator.
+malicious=$(printf '%s' "$profile" | jq --arg s '$(touch /tmp/pwned)' '.server=$s')
+if generate_config "$malicious" >/dev/null 2>"$TMPDIR/generator.err"; then
+    :
+fi
+if [ -e /tmp/pwned ]; then
+    fail "generator executed shell input"
+fi
+rm -f "$TMPDIR/generator.err"
