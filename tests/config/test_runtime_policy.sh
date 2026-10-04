@@ -20,13 +20,11 @@ grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|
     exit 1
 } || true
 
-# The nft comment must be quoted so the colon is part of the comment token.
 grep -F 'comment "singbox: block IPv6 bypass"' "$ROOT/core/network/firewall.sh" >/dev/null || {
     echo "IPv6 nft comment is not quoted" >&2
     exit 1
 }
 
-# The runtime HTTPS probe must use OpenWrt's tiny TLS-capable uclient-fetch.
 grep -F 'uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org' "$ROOT/core/service/manager.sh" >/dev/null || {
     echo "runtime connectivity probe is not using uclient-fetch" >&2
     exit 1
@@ -37,7 +35,24 @@ grep -F '+uclient-fetch' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || 
     exit 1
 }
 
-# Save & Apply must carry the current UI values instead of applying stale UCI state.
+grep -F '+kmod-tun' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || {
+    echo "kmod-tun runtime dependency is missing" >&2
+    exit 1
+}
+grep -F '+kmod-nft-queue' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || {
+    echo "kmod-nft-queue runtime dependency is missing" >&2
+    exit 1
+}
+grep -F '+kmod-inet-diag' "$ROOT/openwrt/singbox-manager/Makefile" >/dev/null || {
+    echo "kmod-inet-diag runtime dependency is missing" >&2
+    exit 1
+}
+
+grep -F 'option allow_insecure '\''0'\''' "$ROOT/openwrt/singbox-manager/files/etc/config/singbox" >/dev/null || {
+    echo "explicit insecure TLS opt-in default is missing" >&2
+    exit 1
+}
+
 grep -F "method: 'apply'" "$ROOT/openwrt/luci-app-singbox/htdocs/luci-static/resources/view/singbox/overview.js" >/dev/null || {
     echo "LuCI apply RPC is missing" >&2
     exit 1
@@ -47,7 +62,6 @@ grep -F 'handleSaveApply: null' "$ROOT/openwrt/luci-app-singbox/htdocs/luci-stat
     exit 1
 }
 
-# Source-of-truth mirror check
 pairs="
 core/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh
 core/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh
