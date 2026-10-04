@@ -4,6 +4,7 @@
 'require ui';
 
 var callStatus = rpc.declare({ object: 'luci.singbox', method: 'status', expect: { '': {} } });
+var callPreview = rpc.declare({ object: 'luci.singbox', method: 'preview', params: { proxy_url: '' } });
 var callSave = rpc.declare({ object: 'luci.singbox', method: 'save', params: { proxy_url: '', auto_start: true, ipv6_policy: '' } });
 var callApply = rpc.declare({ object: 'luci.singbox', method: 'apply', expect: { '': {} } });
 var callEnabled = rpc.declare({ object: 'luci.singbox', method: 'set_enabled', params: { enabled: true } });
@@ -23,6 +24,7 @@ return view.extend({
             autocomplete: 'off',
             placeholder: 'vmess:// or vless://'
         });
+        var previewBox = E('div', { class: 'cbi-section' });
         var auto = E('input', { type: 'checkbox', checked: !!status.enabled });
 
         var statusBox = E('div', { class: 'cbi-section' });
@@ -42,6 +44,33 @@ return view.extend({
                 ]));
             });
         }
+
+        var preview = E('button', {
+            class: 'cbi-button cbi-button-action',
+            click: function() {
+                var value = url.value.trim();
+                if (!value) return;
+                return callPreview({ proxy_url: value }).then(function(p) {
+                    previewBox.innerHTML = '';
+                    [
+                        ['Protocol', p.protocol],
+                        ['Server', p.server],
+                        ['Port', p.server_port],
+                        ['Transport', p.transport],
+                        ['TLS', p.tls ? 'ON' : 'OFF'],
+                        ['Name', p.name || '-']
+                    ].forEach(function(f) {
+                        previewBox.appendChild(E('div', {}, [
+                            E('strong', {}, [_(f[0] + ': ')]),
+                            document.createTextNode(String(f[1]))
+                        ]));
+                    });
+                }).catch(function() {
+                    previewBox.innerHTML = '';
+                    previewBox.appendChild(E('p', {}, [_('Invalid or unsupported proxy URL.')]));
+                });
+            }
+        }, [_('Detect / Preview')]);
 
         var save = E('button', {
             class: 'cbi-button cbi-button-save',
@@ -114,8 +143,10 @@ return view.extend({
                     E('label', { class: 'cbi-value-title' }, [_('Auto Start')]),
                     E('div', { class: 'cbi-value-field' }, [auto])
                 ]),
-                E('div', { class: 'cbi-page-actions' }, [save, apply, confirm, toggle])
+                E('div', { class: 'cbi-page-actions' }, [preview, save, apply, confirm, toggle])
             ]),
+            E('h3', {}, [_('Profile Preview')]),
+            previewBox,
             E('h3', {}, [_('Status')]),
             statusBox,
             E('h3', {}, [_('Logs')]),
