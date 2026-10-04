@@ -25,7 +25,7 @@ return view.extend({
             placeholder: 'vmess:// or vless://'
         });
         var previewBox = E('div', { class: 'cbi-section' });
-        var auto = E('input', { type: 'checkbox', checked: !!status.enabled });
+        var auto = E('input', { type: 'checkbox', checked: !!status.auto_start });
 
         var statusBox = E('div', { class: 'cbi-section' });
         function updateStatus(s) {
