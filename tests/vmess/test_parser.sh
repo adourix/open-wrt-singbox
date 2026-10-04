@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+ROOT=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+# shellcheck source=../../core/protocol/vmess/parser.sh
 . "$ROOT/core/protocol/vmess/parser.sh"
 
 fail() {
