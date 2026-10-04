@@ -1,11 +1,14 @@
 #!/bin/sh
+# Parse a VLESS share URL into normalized profile v1.
+# Input is untrusted and is never evaluated.
+
 VLESS_MAX_INPUT=8192
 
 vless_error() { printf '%s\n' "$1" >&2; return 1; }
 
 _vless_urldecode() {
     LC_ALL=C awk '
-    function hv(c) { c=tolower(c); return index("0123456789abcdef",c)-1 }
+    function hv(c) { return index("0123456789abcdef",tolower(c))-1 }
     {
         s=$0; out=""
         for (i=1;i<=length(s);i++) {
@@ -23,28 +26,37 @@ _vless_urldecode() {
 }
 
 _vless_param() {
-    key=$1; query=$2; old_ifs=$IFS; IFS='&'
+    key=$1
+    query=$2
+    old_ifs=$IFS
+    IFS='&'
     for item in $query; do
         IFS=$old_ifs
-        case "$item" in "$key"=*) printf '%s' "\${item#*=}"; return 0;; esac
+        case "$item" in
+            "$key"=*) printf '%s' "${item#*=}"; IFS=$old_ifs; return 0 ;;
+        esac
         IFS='&'
     done
-    IFS=$old_ifs; return 1
+    IFS=$old_ifs
+    return 1
 }
 
 vless_parse() {
     url=$1
     [ -n "$url" ] || { vless_error "Invalid VLESS URL"; return 1; }
-    [ \${#url} -le "$VLESS_MAX_INPUT" ] || { vless_error "VLESS URL is too long"; return 1; }
+    [ ${#url} -le "$VLESS_MAX_INPUT" ] || { vless_error "VLESS URL is too long"; return 1; }
     case "$url" in vless://*) ;; *) vless_error "Invalid VLESS URL"; return 1;; esac
 
-    rest=\${url#vless://}; fragment=
-    case "$rest" in *#*) fragment=\${rest#*#}; rest=\${rest%%#*};; esac
+    rest=${url#vless://}
+    fragment=
+    case "$rest" in *#*) fragment=${rest#*#}; rest=${rest%%#*};; esac
     query=
-    case "$rest" in *\?*) query=\${rest#*\?}; rest=\${rest%%\?*};; esac
+    case "$rest" in *?*) query=${rest#*?}; rest=${rest%%?*};; esac
 
-    userinfo=\${rest%%@*}; authority=\${rest#*@}
-    [ "$authority" != "$rest" ] || { vless_error "Missing VLESS UUID"; return 1; }
+    case "$rest" in
+        *@*) userinfo=${rest%%@*}; authority=${rest#*@};;
+        *) vless_error "Missing VLESS UUID"; return 1;;
+    esac
     [ -n "$userinfo" ] || { vless_error "Invalid VLESS UUID"; return 1; }
     [ -n "$authority" ] || { vless_error "Missing VLESS server"; return 1; }
 
@@ -53,8 +65,8 @@ vless_parse() {
         { vless_error "Invalid VLESS UUID"; return 1; }
 
     case "$authority" in
-        \[*\]:*) server=\${authority#\[}; server=\${server%%\]*}; port=\${authority##*\]:};;
-        *:*) server=\${authority%:*}; port=\${authority##*:};;
+        [*]:*) server=${authority#[}; server=${server%%]*}; port=${authority##*]:};;
+        *:*) server=${authority%:*}; port=${authority##*:};;
         *) vless_error "Invalid VLESS port"; return 1;;
     esac
     [ -n "$server" ] || { vless_error "Missing VLESS server"; return 1; }
@@ -87,7 +99,7 @@ vless_parse() {
     insecure_json=false
     case "$insecure" in
         1|true|yes)
-            [ "\${VLESS_ALLOW_INSECURE:-0}" = "1" ] ||
+            [ "${VLESS_ALLOW_INSECURE:-0}" = "1" ] ||
                 { vless_error "Insecure TLS requires explicit opt-in"; return 1; }
             insecure_json=true ;;
         "") ;;
@@ -104,15 +116,13 @@ vless_parse() {
         { vless_error "Missing gRPC serviceName"; return 1; }
     [ "$type" != "ws" ] || [ -n "$path" ] || path="/"
 
-    tls_enabled=false
-    if [ "$security" = "tls" ] || [ "$security" = "reality" ]; then tls_enabled=true; fi
+    [ -z "$flow" ] || [ "$flow" = "xtls-rprx-vision" ] ||
+        { vless_error "Unsupported VLESS flow"; return 1; }
 
-    jq -cn \
-      --arg protocol vless --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid" \
-      --arg flow "$flow" --arg security "$security" --arg sni "$sni" --arg type "$type" \
-      --arg path "$path" --arg host "$host" --arg service_name "$service_name" --arg fp "$fp" \
-      --arg pbk "$pbk" --arg sid "$sid" --arg alpn "$alpn" --arg name "$name" \
-      --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" '
+    tls_enabled=false
+    [ "$security" = "tls" ] || [ "$security" = "reality" ] && tls_enabled=true
+
+    jq -cn       --arg protocol vless --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid"       --arg flow "$flow" --arg security "$security" --arg sni "$sni" --arg type "$type"       --arg path "$path" --arg host "$host" --arg service_name "$service_name" --arg fp "$fp"       --arg pbk "$pbk" --arg sid "$sid" --arg alpn "$alpn" --arg name "$name"       --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" '
       {
         schema_version:1, protocol:$protocol, server:$server, server_port:$server_port, uuid:$uuid,
         flow:(if $flow!="" then $flow else null end),
@@ -133,4 +143,4 @@ vless_parse() {
       }'
 }
 
-if [ "\${0##*/}" = "parser.sh" ] && [ "$#" -gt 0 ]; then vless_parse "$1"; fi
+if [ "${0##*/}" = "parser.sh" ] && [ "$#" -gt 0 ]; then vless_parse "$1"; fi
