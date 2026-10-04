@@ -27,17 +27,15 @@ if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uu
     exit 1
 fi
 
-pairs='\
-core/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh\
-core/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh\
-core/protocol/vless/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh\
-core/config/generator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/generator.sh\
-core/config/validator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/validator.sh\
-core/config/version.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/version.sh\
-core/network/firewall.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/network/firewall.sh\
-core/service/manager.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh'
-
-for pair in $pairs; do
+for pair in \
+    "core/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh" \
+    "core/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh" \
+    "core/protocol/vless/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh" \
+    "core/config/generator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/generator.sh" \
+    "core/config/validator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/validator.sh" \
+    "core/config/version.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/version.sh" \
+    "core/network/firewall.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/network/firewall.sh" \
+    "core/service/manager.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh"; do
     core_file=${pair%%|*}
     packaged_file=${pair#*|}
     cmp -s "$ROOT/$core_file" "$ROOT/$packaged_file" || {
