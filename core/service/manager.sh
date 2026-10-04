@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC1091
 MANAGER_LIB=${MANAGER_LIB:-/usr/lib/singbox-manager}
 CONFIG_DIR=${CONFIG_DIR:-/etc/singbox}
 CONFIG=${CONFIG:-$CONFIG_DIR/config.json}
@@ -49,8 +50,7 @@ version_valid() {
 }
 
 tun_exists() {
-    command -v ip >/dev/null 2>&1 &&
-        ip link show singtun0 >/dev/null 2>&1
+    command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1
 }
 
 routing_exists() {
@@ -77,57 +77,21 @@ validate() {
 }
 
 status() {
-    process_running && printf '%s\n' 'Sing-box: running' ||
-        printf '%s\n' 'Sing-box: stopped'
-    config_valid && printf '%s\n' 'Config: valid' ||
-        printf '%s\n' 'Config: invalid'
-    tun_exists && printf '%s\n' 'TUN: singtun0' ||
-        printf '%s\n' 'TUN: absent'
-    routing_exists && printf '%s\n' 'Routing: OK' ||
-        printf '%s\n' 'Routing: absent'
-    [ -f "$PENDING" ] &&
-        printf '%s\n' 'Apply: awaiting confirmation' ||
-        printf '%s\n' 'Apply: confirmed'
+    if process_running; then printf '%s\n' 'Sing-box: running'; else printf '%s\n' 'Sing-box: stopped'; fi
+    if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
+    if tun_exists; then printf '%s\n' 'TUN: singtun0'; else printf '%s\n' 'TUN: absent'; fi
+    if routing_exists; then printf '%s\n' 'Routing: OK'; else printf '%s\n' 'Routing: absent'; fi
+    if [ -f "$PENDING" ]; then printf '%s\n' 'Apply: awaiting confirmation'; else printf '%s\n' 'Apply: confirmed'; fi
 }
 
 health() {
     failed=0
-    if version_valid; then
-        printf '%s\n' 'sing-box version: OK'
-    else
-        printf '%s\n' 'sing-box version: UNSUPPORTED'
-        failed=1
-    fi
-    if command -v "$SINGBOX_BIN" >/dev/null 2>&1; then
-        printf '%s\n' 'sing-box:       OK'
-    else
-        printf '%s\n' 'sing-box:       MISSING'
-        failed=1
-    fi
-    if config_valid; then
-        printf '%s\n' 'configuration:  OK'
-    else
-        printf '%s\n' 'configuration:  ERROR'
-        failed=1
-    fi
-    if process_running; then
-        printf '%s\n' 'process:        OK'
-    else
-        printf '%s\n' 'process:        STOPPED'
-        failed=1
-    fi
-    if tun_exists; then
-        printf '%s\n' 'TUN:            OK'
-    else
-        printf '%s\n' 'TUN:            ERROR'
-        failed=1
-    fi
-    if routing_exists; then
-        printf '%s\n' 'routing:        OK'
-    else
-        printf '%s\n' 'routing:        ERROR'
-        failed=1
-    fi
+    if version_valid; then printf '%s\n' 'sing-box version: OK'; else printf '%s\n' 'sing-box version: UNSUPPORTED'; failed=1; fi
+    if command -v "$SINGBOX_BIN" >/dev/null 2>&1; then printf '%s\n' 'sing-box:       OK'; else printf '%s\n' 'sing-box:       MISSING'; failed=1; fi
+    if config_valid; then printf '%s\n' 'configuration:  OK'; else printf '%s\n' 'configuration:  ERROR'; failed=1; fi
+    if process_running; then printf '%s\n' 'process:        OK'; else printf '%s\n' 'process:        STOPPED'; failed=1; fi
+    if tun_exists; then printf '%s\n' 'TUN:            OK'; else printf '%s\n' 'TUN:            ERROR'; failed=1; fi
+    if routing_exists; then printf '%s\n' 'routing:        OK'; else printf '%s\n' 'routing:        ERROR'; failed=1; fi
     return "$failed"
 }
 
@@ -164,9 +128,7 @@ schedule_rollback() {
 }
 
 start() {
-    if [ -f "$PENDING" ] && [ -f "$BACKUP" ]; then
-        rollback_pending || return 1
-    fi
+    if [ -f "$PENDING" ] && [ -f "$BACKUP" ]; then rollback_pending || return 1; fi
     set_enabled 1 || return 1
     sync_autostart || true
     "$INIT" start
@@ -185,12 +147,12 @@ restart() {
     "$INIT" restart
 }
 
-enable() {
+manager_enable() {
     set_enabled 1 || return 1
     "$INIT" enable
 }
 
-disable() {
+manager_disable() {
     set_enabled 0 || return 1
     "$INIT" disable
 }
@@ -208,57 +170,31 @@ confirm() {
 }
 
 apply() {
-    url=$(get_proxy_url) || {
-        printf '%s\n' 'Unable to read proxy URL' >&2
-        return 1
-    }
-    [ -n "$url" ] || {
-        printf '%s\n' 'Proxy URL is empty' >&2
-        return 1
-    }
-
+    url=$(get_proxy_url) || { printf '%s\n' 'Unable to read proxy URL' >&2; return 1; }
+    [ -n "$url" ] || { printf '%s\n' 'Proxy URL is empty' >&2; return 1; }
     load_core || return 1
-    version_valid || {
-        printf '%s\n' 'Unsupported sing-box version' >&2
-        return 1
-    }
-
-    protocol=$(detect_protocol "$url") || {
-        printf '%s\n' 'Unsupported proxy protocol' >&2
-        return 1
-    }
-
+    version_valid || { printf '%s\n' 'Unsupported sing-box version' >&2; return 1; }
+    protocol=$(detect_protocol "$url") || { printf '%s\n' 'Unsupported proxy protocol' >&2; return 1; }
     case "$protocol" in
         vmess) profile=$(vmess_parse "$url") ;;
         vless) profile=$(vless_parse "$url") ;;
-        *)
-            printf '%s\n' 'Unsupported proxy protocol' >&2
-            return 1
-            ;;
+        *) printf '%s\n' 'Unsupported proxy protocol' >&2; return 1 ;;
     esac
-
     [ -n "$profile" ] || return 1
-
     config=$(generate_config "$profile") || return 1
     umask 077
     mkdir -p "$CONFIG_DIR" || return 1
     printf '%s' "$config" > "$CANDIDATE" || return 1
-    chmod 600 "$CANDIDATE" || {
-        rm -f "$CANDIDATE"
-        return 1
-    }
-
+    chmod 600 "$CANDIDATE" || { rm -f "$CANDIDATE"; return 1; }
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || return 1
     set_enabled 1 || return 1
     sync_autostart || true
-
-    "$INIT" restart || {
+    if ! "$INIT" restart; then
         restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
         set_enabled 0 >/dev/null 2>&1 || true
         "$INIT" restart >/dev/null 2>&1 || true
         return 1
-    }
-
+    fi
     if ! verify_runtime; then
         printf '%s\n' 'Runtime verification failed; restoring previous configuration' >&2
         restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
@@ -266,18 +202,15 @@ apply() {
         "$INIT" restart >/dev/null 2>&1 || true
         return 1
     fi
-
     schedule_rollback || return 1
     printf '%s\n' 'Configuration applied; confirmation required'
-    return 0
 }
 
 recovery() {
     load_core || return 1
     cancel_rollback_timer
     "$INIT" stop >/dev/null 2>&1 || true
-    [ -x "$FIREWALL" ] && "$FIREWALL" cleanup >/dev/null 2>&1 || true
-
+    if [ -x "$FIREWALL" ]; then "$FIREWALL" cleanup >/dev/null 2>&1 || true; fi
     if [ -f "$BACKUP" ]; then
         restore_backup "$CONFIG" "$BACKUP" || return 1
         rm -f "$PENDING"
@@ -296,15 +229,12 @@ case "${1:-}" in
     start) start ;;
     stop) stop ;;
     restart) restart ;;
-    enable) enable ;;
-    disable) disable ;;
+    enable) manager_enable ;;
+    disable) manager_disable ;;
     apply) apply ;;
     confirm) confirm ;;
     validate) validate ;;
     health) health ;;
     recovery) recovery ;;
-    *)
-        printf '%s\n' 'Usage: singbox-manager {status|start|stop|restart|enable|disable|apply|confirm|validate|health|recovery}' >&2
-        exit 2
-        ;;
+    *) printf '%s\n' 'Usage: singbox-manager {status|start|stop|restart|enable|disable|apply|confirm|validate|health|recovery}' >&2; exit 2 ;;
 esac
