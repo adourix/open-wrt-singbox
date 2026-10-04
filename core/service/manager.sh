@@ -47,7 +47,6 @@ connectivity_test() {
     command -v uclient-fetch >/dev/null 2>&1 || return 1
     uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1
 }
-
 validate() {
     config_valid && printf '%s\n' 'Configuration: valid' && return 0
     printf '%s\n' 'Configuration: invalid'; return 1
@@ -80,6 +79,7 @@ read_pending_state() {
     PENDING_AUTOSTART=0
     PENDING_HAD_CONFIG=0
     PENDING_PROXY_URL=
+    PENDING_ALLOW_INSECURE=0
     [ -f "$PENDING" ] || return 1
     while IFS='=' read -r key value; do
         case "$key" in
@@ -87,6 +87,7 @@ read_pending_state() {
             auto_start) case "$value" in 0|1) PENDING_AUTOSTART=$value ;; esac ;;
             had_config) case "$value" in 0|1) PENDING_HAD_CONFIG=$value ;; esac ;;
             proxy_url) PENDING_PROXY_URL=$value ;;
+            allow_insecure) case "$value" in 0|1) PENDING_ALLOW_INSECURE=$value ;; esac ;;
         esac
     done < "$PENDING"
 }
@@ -101,6 +102,7 @@ restore_pending_state() {
     set_enabled "$PENDING_ENABLED" || return 1
     uci set singbox.main.auto_start="$PENDING_AUTOSTART" || return 1
     uci set singbox.main.proxy_url="$PENDING_PROXY_URL" || return 1
+    uci set singbox.main.allow_insecure="$PENDING_ALLOW_INSECURE" || return 1
     uci commit singbox || return 1
     sync_autostart || true
     rm -f "$PENDING" "$BACKUP"
@@ -117,7 +119,8 @@ schedule_rollback() {
         "enabled=$PREVIOUS_ENABLED" \
         "auto_start=$PREVIOUS_AUTOSTART" \
         "had_config=$PREVIOUS_HAD_CONFIG" \
-        "proxy_url=$PREVIOUS_PROXY_URL" > "$PENDING" || return 1
+        "proxy_url=$PREVIOUS_PROXY_URL" \
+        "allow_insecure=$PREVIOUS_ALLOW_INSECURE" > "$PENDING" || return 1
     chmod 600 "$PENDING" 2>/dev/null || true
     (
         sleep "$ROLLBACK_DELAY"
@@ -186,6 +189,7 @@ apply() {
     PREVIOUS_PROXY_URL=$(get_proxy_url)
     PREVIOUS_ENABLED=$(get_bool_option enabled)
     PREVIOUS_AUTOSTART=$(get_bool_option auto_start)
+    PREVIOUS_ALLOW_INSECURE=$(get_bool_option allow_insecure)
     if [ -f "$CONFIG" ]; then
         PREVIOUS_HAD_CONFIG=1
     else
@@ -207,6 +211,7 @@ apply() {
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
         uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
+        uci set singbox.main.allow_insecure="$PREVIOUS_ALLOW_INSECURE" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
@@ -223,6 +228,7 @@ apply() {
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
         uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
+        uci set singbox.main.allow_insecure="$PREVIOUS_ALLOW_INSECURE" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
@@ -239,6 +245,7 @@ apply() {
         set_enabled "$PREVIOUS_ENABLED" >/dev/null 2>&1 || true
         uci set singbox.main.auto_start="$PREVIOUS_AUTOSTART" >/dev/null 2>&1 || true
         uci set singbox.main.proxy_url="$PREVIOUS_PROXY_URL" >/dev/null 2>&1 || true
+        uci set singbox.main.allow_insecure="$PREVIOUS_ALLOW_INSECURE" >/dev/null 2>&1 || true
         uci commit singbox >/dev/null 2>&1 || true
         sync_autostart || true
         "$INIT" restart >/dev/null 2>&1 || true
