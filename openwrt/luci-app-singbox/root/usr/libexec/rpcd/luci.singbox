@@ -1,0 +1,60 @@
+#!/bin/sh
+# rpcd executable plugin for luci.singbox. Never returns the stored proxy URL.
+
+MANAGER=/usr/bin/singbox-manager
+
+status_json() {
+    running=false; valid=false; tun=false; routing=false; enabled=false
+    [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
+    "$MANAGER" health >/tmp/singbox-health.$$ 2>/dev/null || true
+    grep -q '^process:[[:space:]]*OK$' /tmp/singbox-health.$$ && running=true
+    grep -q '^configuration:[[:space:]]*OK$' /tmp/singbox-health.$$ && valid=true
+    grep -q '^TUN:[[:space:]]*OK$' /tmp/singbox-health.$$ && tun=true
+    grep -q '^routing:[[:space:]]*OK$' /tmp/singbox-health.$$ && routing=true
+    rm -f /tmp/singbox-health.$$
+    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing"         '{enabled:$enabled,running:$running,configuration_valid:$valid,tun:$tun,routing:$routing}'
+}
+
+case "$1" in
+list)
+    printf '%s\n' '{"status":{},"save":{"proxy_url":"","auto_start":true,"ipv6_policy":""},"apply":{},"set_enabled":{"enabled":true},"health":{},"logs":{}}'
+    ;;
+call)
+    case "$2" in
+    status)
+        status_json
+        ;;
+    health)
+        "$MANAGER" health >/dev/null 2>&1; rc=$?
+        status_json | jq --argjson ok "$([ "$rc" -eq 0 ] && echo true || echo false)" '. + {ok:$ok}'
+        [ "$rc" -eq 0 ] || exit 1
+        ;;
+    save)
+        input=$(cat)
+        proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || exit 1
+        [ -n "$proxy_url" ] || exit 1
+        auto_start=$(printf '%s' "$input" | jq -er 'if has("auto_start") then (.auto_start|if type=="boolean" then . else error end) else false end') || exit 1
+        ipv6_policy=$(printf '%s' "$input" | jq -er 'if has("ipv6_policy") then .ipv6_policy else "block" end') || exit 1
+        case "$ipv6_policy" in block) ;; *) exit 1;; esac
+        uci set singbox.main.proxy_url="$proxy_url" || exit 1
+        uci set singbox.main.auto_start="$([ "$auto_start" = true ] && echo 1 || echo 0)" || exit 1
+        uci set singbox.main.ipv6_policy="$ipv6_policy" || exit 1
+        uci commit singbox || exit 1
+        printf '%s\n' '{"saved":true}'
+        ;;
+    apply)
+        "$MANAGER" apply >/dev/null 2>&1 || exit 1
+        printf '%s\n' '{"applied":true}'
+        ;;
+    set_enabled)
+        enabled=$(cat | jq -er '.enabled | if type=="boolean" then . else error end') || exit 1
+        if [ "$enabled" = true ]; then "$MANAGER" start >/dev/null 2>&1 || exit 1; else "$MANAGER" stop >/dev/null 2>&1 || exit 1; fi
+        printf '%s\n' '{"updated":true}'
+        ;;
+    logs)
+        logread -e singbox 2>/dev/null | tail -n 100 | jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
+        ;;
+    *) exit 1 ;;
+    esac
+    ;;
+esac
