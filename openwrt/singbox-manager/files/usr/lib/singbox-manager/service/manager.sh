@@ -4,9 +4,12 @@ CONFIG_DIR=${CONFIG_DIR:-/etc/singbox}
 CONFIG=${CONFIG:-$CONFIG_DIR/config.json}
 CANDIDATE=${CANDIDATE:-$CONFIG_DIR/config.json.new}
 BACKUP=${BACKUP:-$CONFIG_DIR/config.json.bak}
+PENDING=${PENDING:-$CONFIG_DIR/config.pending}
+ROLLBACK_PID=${ROLLBACK_PID:-/var/run/singbox-manager-rollback.pid}
 INIT=${INIT:-/etc/init.d/singbox}
 SINGBOX_BIN=${SINGBOX_BIN:-sing-box}
 FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
+ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
 
 load_core() {
     . "$MANAGER_LIB/protocol/detector.sh" || return 1
@@ -17,11 +20,21 @@ load_core() {
 }
 get_proxy_url() { uci -q get singbox.main.proxy_url 2>/dev/null; }
 set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; }
+sync_autostart() {
+    case "$(uci -q get singbox.main.auto_start 2>/dev/null)" in
+        1|yes|true) "$INIT" enable ;;
+        *) "$INIT" disable ;;
+    esac
+}
 
 config_valid() { [ -f "$CONFIG" ] && "$SINGBOX_BIN" check -c "$CONFIG" >/dev/null 2>&1; }
 tun_exists() { command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1; }
 routing_exists() { command -v ip >/dev/null 2>&1 && ip route show dev singtun0 2>/dev/null | grep -q .; }
 process_running() { "$INIT" running >/dev/null 2>&1; }
+connectivity_test() {
+    command -v wget >/dev/null 2>&1 || return 1
+    wget -q -T 8 -O /dev/null https://api.ipify.org
+}
 
 validate() {
     config_valid && printf '%s\n' 'Configuration: valid' || { printf '%s\n' 'Configuration: invalid'; return 1; }
@@ -32,6 +45,7 @@ status() {
     config_valid && printf '%s\n' 'Config: valid' || printf '%s\n' 'Config: invalid'
     tun_exists && printf '%s\n' 'TUN: singtun0' || printf '%s\n' 'TUN: absent'
     routing_exists && printf '%s\n' 'Routing: OK' || printf '%s\n' 'Routing: absent'
+    [ -f "$PENDING" ] && printf '%s\n' 'Apply: awaiting confirmation' || printf '%s\n' 'Apply: confirmed'
 }
 
 health() {
@@ -44,15 +58,51 @@ health() {
     return "$failed"
 }
 
-start() { set_enabled 1 || return 1; "$INIT" start; }
-stop() { set_enabled 0 || return 1; "$INIT" stop; }
-restart() { set_enabled 1 || return 1; "$INIT" restart; }
-enable() { "$INIT" enable; set_enabled 1; }
+cancel_rollback_timer() {
+    if [ -f "$ROLLBACK_PID" ]; then
+        pid=$(cat "$ROLLBACK_PID" 2>/dev/null)
+        case "$pid" in *[!0-9]*|'') ;; *) kill "$pid" 2>/dev/null || true ;; esac
+        rm -f "$ROLLBACK_PID"
+    fi
+}
+
+rollback_pending() {
+    load_core || return 1
+    cancel_rollback_timer
+    [ -f "$BACKUP" ] || return 1
+    restore_backup "$CONFIG" "$BACKUP" || return 1
+    rm -f "$PENDING"
+    set_enabled 1 || return 1
+    "$INIT" restart
+}
+
+schedule_rollback() {
+    cancel_rollback_timer
+    printf '%s\n' pending > "$PENDING" || return 1
+    (
+        sleep "$ROLLBACK_DELAY"
+        [ -f "$PENDING" ] || exit 0
+        rollback_pending >/dev/null 2>&1 || true
+    ) >/dev/null 2>&1 &
+    echo "$!" > "$ROLLBACK_PID"
+}
+
+start() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" start; }
+stop() { set_enabled 0 || return 1; "$INIT" stop; cancel_rollback_timer; rm -f "$PENDING"; }
+restart() { set_enabled 1 || return 1; sync_autostart || true; "$INIT" restart; }
+enable() { set_enabled 1 || return 1; "$INIT" enable; }
 disable() { set_enabled 0 || return 1; "$INIT" disable; }
 
 verify_runtime() {
     sleep 1
-    process_running && tun_exists && routing_exists
+    process_running && tun_exists && routing_exists && connectivity_test
+}
+
+confirm() {
+    [ -f "$PENDING" ] || return 0
+    cancel_rollback_timer
+    rm -f "$PENDING"
+    printf '%s\n' 'Configuration confirmed'
 }
 
 apply() {
@@ -73,6 +123,7 @@ apply() {
     chmod 600 "$CANDIDATE" || { rm -f "$CANDIDATE"; return 1; }
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || return 1
     set_enabled 1 || return 1
+    sync_autostart || true
     "$INIT" restart || {
         restore_backup "$CONFIG" "$BACKUP" >/dev/null 2>&1 || true
         set_enabled 0 >/dev/null 2>&1 || true
@@ -86,18 +137,24 @@ apply() {
         "$INIT" restart >/dev/null 2>&1 || true
         return 1
     fi
+    schedule_rollback || return 1
+    printf '%s\n' 'Configuration applied; confirmation required'
     return 0
 }
 
 recovery() {
     load_core || return 1
+    cancel_rollback_timer
     "$INIT" stop >/dev/null 2>&1 || true
     [ -x "$FIREWALL" ] && "$FIREWALL" cleanup >/dev/null 2>&1 || true
     if [ -f "$BACKUP" ]; then
         restore_backup "$CONFIG" "$BACKUP" || return 1
+        rm -f "$PENDING"
         set_enabled 1 || return 1
+        sync_autostart || true
         "$INIT" restart
     else
+        rm -f "$PENDING"
         set_enabled 0 || return 1
         "$INIT" stop
     fi
@@ -105,6 +162,6 @@ recovery() {
 
 case "${1:-}" in
  status) status;; start) start;; stop) stop;; restart) restart;; enable) enable;; disable) disable;;
- apply) apply;; validate) validate;; health) health;; recovery) recovery;;
- *) printf '%s\n' 'Usage: singbox-manager {status|start|stop|restart|enable|disable|apply|validate|health|recovery}' >&2; exit 2;;
+ apply) apply;; confirm) confirm;; validate) validate;; health) health;; recovery) recovery;;
+ *) printf '%s\n' 'Usage: singbox-manager {status|start|stop|restart|enable|disable|apply|confirm|validate|health|recovery}' >&2; exit 2;;
 esac
