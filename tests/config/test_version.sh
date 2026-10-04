@@ -3,6 +3,8 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 . "$ROOT/core/config/version.sh"
+SINGBOX_TEMPLATE_DIR="$ROOT/core/config/templates"
+export SINGBOX_TEMPLATE_DIR
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
