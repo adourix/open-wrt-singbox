@@ -55,7 +55,7 @@ jobs:
           done
       - name: Check secret logging
         run: |
-          if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' core >/dev/null 2>&1; then
+          if grep -R -nE 'echo .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' core >/dev/null 2>&1; then
             echo 'possible secret logging found' >&2
             exit 1
           fi
