@@ -29,13 +29,12 @@ _vless_param() {
     key=$1
     query=$2
     old_ifs=$IFS
+    set -f
     IFS='&'
     for item in $query; do
-        IFS=$old_ifs
         case "$item" in
             "$key"=*) printf '%s' "${item#*=}"; IFS=$old_ifs; return 0 ;;
         esac
-        IFS='&'
     done
     IFS=$old_ifs
     return 1
@@ -112,6 +111,8 @@ vless_parse() (
         [ -n "$pbk" ] || { vless_error "Missing Reality public key"; return 1; }
         [ -n "$sid" ] || { vless_error "Missing Reality short ID"; return 1; }
         [ -n "$sni" ] || { vless_error "Missing Reality SNI"; return 1; }
+        printf '%s' "$sid" | grep -Eq '^[0-9A-Fa-f]{0,16}$' || { vless_error "Invalid Reality short ID"; return 1; }
+        printf '%s' "$pbk" | grep -Eq '^[A-Za-z0-9_-]+$' || { vless_error "Invalid Reality public key"; return 1; }
     fi
     [ "$type" != "grpc" ] || [ -n "$service_name" ] ||
         { vless_error "Missing gRPC serviceName"; return 1; }
