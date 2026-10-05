@@ -13,7 +13,6 @@ grep -F 'uci set singbox.main.auto_start=0' "$INIT" >/dev/null
 
 # With a valid backup, the previous desired state must be restored.
 grep -F '"$PROG" check -c "$BACKUP"' "$INIT" >/dev/null
-grep -F 'restore pending configuration' "$INIT" >/dev/null 2>&1 || true
 grep -F 'old_enabled=$(jq -er' "$INIT" >/dev/null
 grep -F 'old_auto_start=$(jq -er' "$INIT" >/dev/null
 
