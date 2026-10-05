@@ -16,4 +16,13 @@ grep -F '"$PROG" check -c "$BACKUP"' "$INIT" >/dev/null
 grep -F 'old_enabled=$(jq -er' "$INIT" >/dev/null
 grep -F 'old_auto_start=$(jq -er' "$INIT" >/dev/null
 
+# Startup failures must be diagnosable through logd and firewall setup must be
+# cleaned up when it fails before procd starts sing-box.
+grep -F "log_error 'sing-box configuration check failed'" "$INIT" >/dev/null
+grep -F "log_error 'sing-box firewall setup failed'" "$INIT" >/dev/null
+grep -F '"$FIREWALL" cleanup' "$INIT" >/dev/null
+
+# Normal stop must remove project-owned firewall state.
+grep -F 'firewall cleanup failed' "$INIT" >/dev/null
+
 printf '%s\n' 'init recovery contract tests: PASS'
