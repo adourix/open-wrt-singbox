@@ -22,7 +22,7 @@ firewall_apply() {
 
     nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN_NAME" \
         iifname "br-lan" meta nfproto ipv6 drop \
-        comment "singbox: block IPv6 bypass" || {
+        comment singbox_block_ipv6_bypass || {
             nft delete table "$TABLE_FAMILY" "$TABLE_NAME" >/dev/null 2>&1 || true
             return 1
         }
