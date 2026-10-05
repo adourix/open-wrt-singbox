@@ -73,10 +73,13 @@ process_running() { "$INIT" running >/dev/null 2>&1; }
 connectivity_test() { command -v uclient-fetch >/dev/null 2>&1 || return 1; uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1; }
 restore_current_config() {
     if [ -f "$BACKUP" ]; then
-        restore_backup "$CONFIG" "$BACKUP"
-    else
-        rm -f "$CONFIG" "$CANDIDATE"
+        if restore_backup "$CONFIG" "$BACKUP"; then
+            return 0
+        fi
+        logger -t singbox "configured backup is invalid; removing active configuration"
     fi
+    rm -f "$CONFIG" "$CANDIDATE"
+    return 0
 }
 
 validate() { config_valid && printf '%s\n' 'Configuration: valid' && return 0; printf '%s\n' 'Configuration: invalid'; return 1; }
@@ -151,11 +154,15 @@ schedule_rollback() {
     echo "$!" > "$ROLLBACK_PID"
 }
 start() {
+    [ ! -f "$PENDING" ] && [ ! -f "$PENDING_STATE" ] || { printf '%s\n' 'Configuration confirmation is pending' >&2; return 1; }
     config_valid || { printf '%s\n' 'Configuration is invalid or missing' >&2; return 1; }
     previous_enabled=$(uci -q get singbox.main.enabled 2>/dev/null || true)
     [ "$previous_enabled" = "1" ] || previous_enabled=0
     set_enabled 1 || return 1
-    sync_autostart || true
+    if ! sync_autostart; then
+        set_enabled "$previous_enabled" >/dev/null 2>&1 || true
+        return 1
+    fi
     if ! "$INIT" start; then
         set_enabled "$previous_enabled" >/dev/null 2>&1 || true
         return 1
@@ -181,9 +188,24 @@ stop() {
     "$INIT" stop || return 1
 }
 restart() {
+    [ ! -f "$PENDING" ] && [ ! -f "$PENDING_STATE" ] || { printf '%s\n' 'Configuration confirmation is pending' >&2; return 1; }
+    config_valid || { printf '%s\n' 'Configuration is invalid or missing' >&2; return 1; }
     set_enabled 1 || return 1
-    sync_autostart || true
-    "$INIT" restart
+    if ! sync_autostart; then
+        set_enabled 0 >/dev/null 2>&1 || true
+        return 1
+    fi
+    if ! "$INIT" restart; then
+        "$INIT" stop >/dev/null 2>&1 || true
+        set_enabled 0 >/dev/null 2>&1 || true
+        return 1
+    fi
+    if ! verify_runtime; then
+        printf '%s\n' 'Runtime verification failed' >&2
+        "$INIT" stop >/dev/null 2>&1 || true
+        set_enabled 0 >/dev/null 2>&1 || true
+        return 1
+    fi
 }
 manager_enable() { set_enabled 1 || return 1; "$INIT" enable; }
 manager_disable() { set_enabled 0 || return 1; "$INIT" disable; }
@@ -217,7 +239,12 @@ apply() {
     printf '%s' "$config" > "$CANDIDATE" || return 1
     chmod 600 "$CANDIDATE" || { rm -f "$CANDIDATE"; return 1; }
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || { rm -f "$CANDIDATE"; return 1; }
-    set_enabled 1 || return 1; sync_autostart || true
+    if ! set_enabled 1 || ! sync_autostart; then
+        printf '%s\n' 'Unable to persist service state; restoring previous configuration' >&2
+        restore_current_config >/dev/null 2>&1 || true
+        restore_previous_state "$previous_proxy_url" "$previous_allow_insecure" "$previous_auto_start" "$previous_enabled" >/dev/null 2>&1 || true
+        return 1
+    fi
     if ! "$INIT" restart; then
         printf '%s\n' 'Service restart failed; restoring previous configuration' >&2
         restore_current_config >/dev/null 2>&1 || true
@@ -264,13 +291,20 @@ recovery() {
             old_state=$(restore_pending_uci) || return 1
             old_enabled=${old_state%%|*}; old_auto_start=${old_state#*|}
             case "$old_auto_start" in 1|yes|true) "$INIT" enable ;; *) "$INIT" disable ;; esac
-            if [ "$old_enabled" = "1" ]; then "$INIT" restart || return 1; else "$INIT" stop || return 1; fi
+            if [ "$old_enabled" = "1" ]; then
+                "$INIT" restart || return 1
+                verify_runtime || { set_enabled 0 >/dev/null 2>&1 || true; "$INIT" stop >/dev/null 2>&1 || true; return 1; }
+            else
+                "$INIT" stop || return 1
+            fi
         else
             set_enabled 0 || return 1; "$INIT" stop
         fi
         rm -f "$PENDING" "$PENDING_STATE"
     else
-        rm -f "$PENDING" "$PENDING_STATE"; set_enabled 0 || return 1; "$INIT" stop
+        rm -f "$CONFIG" "$CANDIDATE" "$PENDING" "$PENDING_STATE"
+        set_enabled 0 || return 1
+        "$INIT" stop
     fi
 }
 case "${1:-}" in
