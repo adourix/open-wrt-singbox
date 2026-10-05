@@ -7,6 +7,11 @@ on:
       - "core/**"
       - "openwrt/**"
       - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "core/**"
+      - "openwrt/**"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
@@ -67,8 +72,6 @@ jobs:
 
       - name: Build packages
         env:
-          # Newer CMake rejects the old cmake_minimum_required used by some
-          # LuCI dependencies (for example lucihttp). Harmless if not needed.
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           cd "$SDK_DIR"
