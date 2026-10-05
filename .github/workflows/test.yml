@@ -43,7 +43,7 @@ jobs:
           grep -F 'VLESS_ALLOW_INSECURE' core/service/manager.sh >/dev/null
           grep -F 'PENDING_STATE' core/service/manager.sh >/dev/null
           grep -F 'restore_pending_uci' core/service/manager.sh >/dev/null
-          ! grep -F 'wget ' core/service/manager.sh >/dev/null
+          grep -F 'pidof' core/service/manager.sh >/dev/null
       - name: Check source mirrors
         run: |
           for pair in \
