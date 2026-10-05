@@ -14,33 +14,44 @@ FIREWALL=/usr/lib/singbox-manager/network/firewall.sh
 
 recover_pending_config() {
     [ -f "$PENDING" ] || [ -f "$PENDING_STATE" ] || return 0
-    if [ ! -f "$BACKUP" ] || ! "$PROG" check -c "$BACKUP" >/dev/null 2>&1; then
-        logger -t singbox "pending configuration exists but a valid backup is unavailable"
-        return 1
+
+    if [ -f "$BACKUP" ] && "$PROG" check -c "$BACKUP" >/dev/null 2>&1; then
+        cp -f "$BACKUP" "$CONFIG" || return 1
+        chmod 600 "$CONFIG" 2>/dev/null || true
+
+        if [ -f "$PENDING_STATE" ]; then
+            old_proxy_url=$(jq -er '.proxy_url | strings' "$PENDING_STATE") || return 1
+            old_allow_insecure=$(jq -er '.allow_insecure | strings' "$PENDING_STATE") || return 1
+            old_auto_start=$(jq -er '.auto_start | strings' "$PENDING_STATE") || return 1
+            old_enabled=$(jq -er '.enabled | strings' "$PENDING_STATE") || return 1
+            uci set singbox.main.proxy_url="$old_proxy_url" || return 1
+            uci set singbox.main.allow_insecure="$old_allow_insecure" || return 1
+            uci set singbox.main.auto_start="$old_auto_start" || return 1
+            uci set singbox.main.enabled="$old_enabled" || return 1
+            uci commit singbox || return 1
+            chmod 600 /etc/config/singbox 2>/dev/null || true
+            case "$old_auto_start" in
+                1|yes|true) "$INIT" enable || return 1 ;;
+                *) "$INIT" disable || return 1 ;;
+            esac
+        else
+            uci set singbox.main.enabled=0 || return 1
+            uci set singbox.main.auto_start=0 || return 1
+            uci commit singbox || return 1
+            "$INIT" disable || return 1
+        fi
+        rm -f "$PENDING" "$PENDING_STATE"
+        logger -t singbox "pending configuration rolled back during boot"
+        return 0
     fi
 
-    cp -f "$BACKUP" "$CONFIG" || return 1
-    chmod 600 "$CONFIG" 2>/dev/null || true
-
-    if [ -f "$PENDING_STATE" ]; then
-        old_proxy_url=$(jq -er '.proxy_url | strings' "$PENDING_STATE") || return 1
-        old_allow_insecure=$(jq -er '.allow_insecure | strings' "$PENDING_STATE") || return 1
-        old_auto_start=$(jq -er '.auto_start | strings' "$PENDING_STATE") || return 1
-        old_enabled=$(jq -er '.enabled | strings' "$PENDING_STATE") || return 1
-        uci set singbox.main.proxy_url="$old_proxy_url" || return 1
-        uci set singbox.main.allow_insecure="$old_allow_insecure" || return 1
-        uci set singbox.main.auto_start="$old_auto_start" || return 1
-        uci set singbox.main.enabled="$old_enabled" || return 1
-        uci commit singbox || return 1
-        chmod 600 /etc/config/singbox 2>/dev/null || true
-        case "$old_auto_start" in
-            1|yes|true) "$INIT" enable ;;
-            *) "$INIT" disable ;;
-        esac
-    fi
-
+    logger -t singbox "pending configuration has no valid backup; disabling sing-box safely"
+    rm -f "$CONFIG" /etc/singbox/config.json.new
+    uci set singbox.main.enabled=0 || return 1
+    uci set singbox.main.auto_start=0 || return 1
+    uci commit singbox || return 1
+    "$INIT" disable || return 1
     rm -f "$PENDING" "$PENDING_STATE"
-    logger -t singbox "pending configuration rolled back during boot"
     return 0
 }
 
