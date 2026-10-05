@@ -20,13 +20,13 @@ status_json() {
     [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
     [ -n "$(uci -q get singbox.main.proxy_url 2>/dev/null)" ] && configured=true
     [ "$(uci -q get singbox.main.allow_insecure 2>/dev/null)" = "1" ] && allow_insecure=true
-    [ -f /etc/singbox/config.pending ] && pending=true
+    [ -f /etc/singbox/config.pending ] || [ -f /etc/singbox/state.pending.json ] && pending=true
     /etc/init.d/singbox enabled >/dev/null 2>&1 && auto_start=true
 
     if command -v sing-box >/dev/null 2>&1 && [ -f "$CONFIG" ] && sing-box check -c "$CONFIG" >/dev/null 2>&1; then
         valid=true
     fi
-    if /etc/init.d/singbox running >/dev/null 2>&1; then
+    if command -v pidof >/dev/null 2>&1 && pidof sing-box >/dev/null 2>&1; then
         running=true
         state=RUNNING
         ip link show singtun0 >/dev/null 2>&1 && tun=true
