@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=singbox-manager
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -11,7 +11,7 @@ define Package/singbox-manager
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Lightweight sing-box manager
-  EXTRA_DEPENDS:=sing-box jq nftables uclient-fetch kmod-tun kmod-nfnetlink-queue kmod-nft-queue kmod-inet-diag
+  EXTRA_DEPENDS:=sing-box (>= 0) jq (>= 0) nftables (>= 0) uclient-fetch (>= 0) kmod-tun (>= 0) kmod-nfnetlink-queue (>= 0) kmod-nft-queue (>= 0) kmod-inet-diag (>= 0)
 endef
 
 define Package/singbox-manager/description
