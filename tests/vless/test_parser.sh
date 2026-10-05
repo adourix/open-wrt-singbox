@@ -45,10 +45,23 @@ expect_error "vless://$uuid@example.com:443?type=xhttp" "Unsupported transport"
 expect_error "vless://$uuid@example.com:443?security=xtls" "Unsupported VLESS security mode"
 expect_error "vless://$uuid@example.com:443?type=grpc" "Missing gRPC serviceName"
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com" "Missing Reality public key"
+expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=PUBLIC&sid=0123456789abcdef0" "Invalid Reality short ID"
+expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=bad%2Akey&sid=0123" "Invalid Reality public key"
 expect_error "vless://$uuid@example.com:443?insecure=1" "Insecure TLS requires explicit opt-in"
 
 VLESS_ALLOW_INSECURE=1 vless_parse "vless://$uuid@example.com:443?security=tls&insecure=1" |
  jq -e '.tls.insecure == true' >/dev/null || fail "explicit insecure opt-in"
+
+# Query parsing must not perform pathname expansion on untrusted values.
+glob_dir="$TMPDIR/vless-glob.$$"
+mkdir -p "$glob_dir"
+(
+    cd "$glob_dir"
+    : > 'host=evil'
+    out=$(vless_parse "vless://$uuid@example.com:443?type=ws&host=*")
+    printf '%s\n' "$out" | jq -e '.transport.headers.Host == "*"' >/dev/null
+) || fail "query pathname expansion"
+rm -rf "$glob_dir"
 
 name='vless://'$uuid'@example.com:443?type=ws#hello%0A$(touch%20/tmp/pwned)'
 out=$(vless_parse "$name")
