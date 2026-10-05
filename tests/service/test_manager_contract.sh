@@ -51,7 +51,7 @@ grep -F 'ROLLBACK_TIMER_CHILD' "$MANAGER" >/dev/null
 
 # The manager is intentionally a standalone runtime package in the SDK: its
 # dependencies must remain install-time metadata, not SDK build dependencies.
-grep -F 'EXTRA_DEPENDS:=sing-box (>= 0) jq (>= 0) nftables (>= 0) uclient-fetch (>= 0) kmod-tun (>= 0) kmod-nfnetlink-queue (>= 0) kmod-nft-queue (>= 0) kmod-inet-diag (>= 0)' "$PACKAGE" >/dev/null
+grep -F 'EXTRA_DEPENDS:=sing-box (>= 0), jq (>= 0), nftables (>= 0), uclient-fetch (>= 0), kmod-tun (>= 0), kmod-nfnetlink-queue (>= 0), kmod-nft-queue (>= 0), kmod-inet-diag (>= 0)' "$PACKAGE" >/dev/null
 if grep -F 'DEPENDS:=+sing-box' "$PACKAGE" >/dev/null; then
     exit 1
 fi
