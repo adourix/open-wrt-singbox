@@ -4,6 +4,7 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 MANAGER="$ROOT/core/service/manager.sh"
 MIRROR="$ROOT/openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh"
+PACKAGE="$ROOT/openwrt/singbox-manager/Makefile"
 
 # Core and packaged manager must remain byte-for-byte identical.
 cmp -s "$MANAGER" "$MIRROR"
@@ -42,11 +43,17 @@ grep -F 'tries=0' "$MANAGER" >/dev/null
 
 # Confirm must never report success when verification fails.
 grep -F 'Current configuration failed runtime verification; rolling back' "$MANAGER" >/dev/null
-
 grep -F 'Configuration confirmed' "$MANAGER" >/dev/null
 
 # The rollback worker must not kill itself when it clears its PID file.
 grep -F 'ROLLBACK_TIMER_CHILD=1 rollback_pending' "$MANAGER" >/dev/null
 grep -F 'ROLLBACK_TIMER_CHILD' "$MANAGER" >/dev/null
+
+# The manager is intentionally a standalone runtime package in the SDK: its
+# dependencies must remain install-time metadata, not SDK build dependencies.
+grep -F 'EXTRA_DEPENDS:=sing-box jq nftables uclient-fetch kmod-tun kmod-nfnetlink-queue kmod-nft-queue kmod-inet-diag' "$PACKAGE" >/dev/null
+if grep -F 'DEPENDS:=+sing-box' "$PACKAGE" >/dev/null; then
+    exit 1
+fi
 
 printf '%s\n' 'manager lifecycle contract tests: PASS'
