@@ -23,10 +23,6 @@ on:
           - kt708
           - x86_64
           - both
-      kt708_sdk_url:
-        description: "Optional exact KT-708 SDK tarball URL. Leave empty to use OpenWrt 25.12.5 ipq40xx/generic SDK."
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -68,8 +64,13 @@ jobs:
           set -eu
           BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/x86/64"
           wget -q "$BASE/sha256sums"
-          [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE"
-          grep " $X86_SDK_FILE$" sha256sums | sha256sum -c -
+          EXPECTED_SHA="$(awk -v f="$X86_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
+          test -n "$EXPECTED_SHA"
+          if [ -f "$X86_SDK_FILE" ]; then
+            printf '%s  %s\n' "$EXPECTED_SHA" "$X86_SDK_FILE" | sha256sum -c - || rm -f "$X86_SDK_FILE"
+          fi
+          [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE" -O "$X86_SDK_FILE"
+          printf '%s  %s\n' "$EXPECTED_SHA" "$X86_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
 
@@ -143,38 +144,26 @@ jobs:
             gettext git libncurses-dev libssl-dev python3 rsync unzip \
             zlib1g-dev file wget zstd
 
-      - name: Resolve KT-708 SDK
-        env:
-          INPUT_SDK_URL: ${{ inputs.kt708_sdk_url }}
-        run: |
-          set -eu
-          if [ -n "${INPUT_SDK_URL:-}" ]; then
-            case "$INPUT_SDK_URL" in
-              https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/ipq40xx/generic/openwrt-sdk-*.tar.zst) ;;
-              *) echo "Invalid KT-708 SDK URL" >&2; exit 1 ;;
-            esac
-            SDK_URL="$INPUT_SDK_URL"
-          else
-            SDK_URL="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${KT708_TARGET}/${KT708_SDK_FILE}"
-          fi
-          SDK_FILE="$(basename "$SDK_URL")"
-          case "$SDK_FILE" in
-            openwrt-sdk-${OPENWRT_VERSION}-ipq40xx-generic_*.tar.zst) ;;
-            *) echo "Resolved file is not the expected OpenWrt ${OPENWRT_VERSION} ipq40xx/generic SDK: $SDK_FILE" >&2; exit 1 ;;
-          esac
-          echo "SDK_FILE=$SDK_FILE" >> "$GITHUB_ENV"
-          echo "SDK_URL=$SDK_URL" >> "$GITHUB_ENV"
-          echo "SDK_DIR=$PWD/${SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-          echo "Using SDK: $SDK_URL"
+      - name: Cache SDK archive
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.KT708_SDK_FILE }}
+          key: sdk-${{ env.KT708_SDK_FILE }}
 
       - name: Download and verify KT-708 SDK
         run: |
           set -eu
           BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${KT708_TARGET}"
           wget -q "$BASE/sha256sums"
-          wget -q "$SDK_URL" -O "$SDK_FILE"
-          grep " $SDK_FILE$" sha256sums | sha256sum -c -
-          tar --zstd -xf "$SDK_FILE"
+          EXPECTED_SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
+          test -n "$EXPECTED_SHA"
+          if [ -f "$KT708_SDK_FILE" ]; then
+            printf '%s  %s\n' "$EXPECTED_SHA" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"
+          fi
+          [ -f "$KT708_SDK_FILE" ] || wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
+          printf '%s  %s\n' "$EXPECTED_SHA" "$KT708_SDK_FILE" | sha256sum -c -
+          tar --zstd -xf "$KT708_SDK_FILE"
+          echo "SDK_DIR=$PWD/${KT708_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
 
       - name: Verify KT-708 package target
         run: |
