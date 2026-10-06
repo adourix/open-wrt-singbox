@@ -60,6 +60,7 @@ generate_config() {
         else null end;
       def proxy_outbound:
         ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid}
+        + {domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"}}
         + (if $p.protocol=="vmess" then {alter_id:$p.alter_id,security:$p.security}
            elif $p.flow != null then {flow:$p.flow} else {} end)
         + (if tls != null then {tls:tls} else {} end)
