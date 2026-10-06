@@ -24,7 +24,7 @@ on:
           - x86_64
           - both
       kt708_sdk_url:
-        description: "Optional exact KT-708 SDK tarball URL. Leave empty to use the latest ipq40xx/generic snapshot SDK."
+        description: "Optional exact KT-708 SDK tarball URL. Leave empty to use OpenWrt 25.12.5 ipq40xx/generic SDK."
         required: false
         type: string
 
@@ -36,9 +36,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  X86_OPENWRT_VERSION: "25.12.5"
+  OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
-  KT708_OPENWRT_VERSION: "24.10-SNAPSHOT"
+  KT708_SDK_FILE: openwrt-sdk-25.12.5-ipq40xx-generic_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst
   KT708_TARGET: "ipq40xx/generic"
   KT708_ARCH: "arm_cortex-a7_neon-vfpv4"
 
@@ -65,10 +65,11 @@ jobs:
 
       - name: Download and verify OpenWrt SDK
         run: |
-          BASE="https://downloads.openwrt.org/releases/${X86_OPENWRT_VERSION}/targets/x86/64"
+          set -eu
+          BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/x86/64"
           wget -q "$BASE/sha256sums"
           [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE"
-          grep "$X86_SDK_FILE" sha256sums | sha256sum -c -
+          grep " $X86_SDK_FILE$" sha256sums | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
 
@@ -76,8 +77,9 @@ jobs:
         run: |
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
+          ./scripts/feeds install -a
           test -f feeds/luci/luci.mk
-          test -f feeds/packages/net/sing-box/Makefile || test -f feeds/packages/*/sing-box/Makefile
+          test -f feeds/packages/net/sing-box/Makefile
 
       - name: Copy project packages
         run: |
@@ -112,6 +114,7 @@ jobs:
 
       - name: Collect packages
         run: |
+          set -eu
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find "$SDK_DIR/bin/packages" -type f \
             \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
@@ -122,7 +125,7 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ env.X86_OPENWRT_VERSION }}-x86-64-packages
+          name: openwrt-${{ env.OPENWRT_VERSION }}-x86-64-packages
           path: artifacts/*.apk
           if-no-files-found: error
 
@@ -147,54 +150,49 @@ jobs:
           set -eu
           if [ -n "${INPUT_SDK_URL:-}" ]; then
             case "$INPUT_SDK_URL" in
-              https://downloads.openwrt.org/*/targets/ipq40xx/generic/openwrt-sdk-*.tar.zst) ;;
+              https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/ipq40xx/generic/openwrt-sdk-*.tar.zst) ;;
               *) echo "Invalid KT-708 SDK URL" >&2; exit 1 ;;
             esac
             SDK_URL="$INPUT_SDK_URL"
           else
-            INDEX_URL="https://downloads.openwrt.org/snapshots/targets/${KT708_TARGET}/"
-            SDK_FILE="$(wget -qO- "$INDEX_URL" \
-              | sed -n 's/.*href="\([^\"]*openwrt-sdk-[^\"]*Linux-x86_64\.tar\.zst\)".*/\1/p' \
-              | head -n 1)"
-            if [ -z "$SDK_FILE" ]; then
-              echo "No Linux-x86_64 SDK found in $INDEX_URL" >&2
-              exit 1
-            fi
-            SDK_URL="${INDEX_URL}${SDK_FILE}"
+            SDK_URL="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${KT708_TARGET}/${KT708_SDK_FILE}"
           fi
           SDK_FILE="$(basename "$SDK_URL")"
           case "$SDK_FILE" in
-            openwrt-sdk-*.tar.zst) ;;
-            *) echo "Resolved file is not an OpenWrt SDK: $SDK_FILE" >&2; exit 1 ;;
+            openwrt-sdk-${OPENWRT_VERSION}-ipq40xx-generic_*.tar.zst) ;;
+            *) echo "Resolved file is not the expected OpenWrt ${OPENWRT_VERSION} ipq40xx/generic SDK: $SDK_FILE" >&2; exit 1 ;;
           esac
           echo "SDK_FILE=$SDK_FILE" >> "$GITHUB_ENV"
           echo "SDK_URL=$SDK_URL" >> "$GITHUB_ENV"
           echo "SDK_DIR=$PWD/${SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
           echo "Using SDK: $SDK_URL"
 
-      - name: Download KT-708 SDK
+      - name: Download and verify KT-708 SDK
         run: |
           set -eu
+          BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${KT708_TARGET}"
+          wget -q "$BASE/sha256sums"
           wget -q "$SDK_URL" -O "$SDK_FILE"
+          grep " $SDK_FILE$" sha256sums | sha256sum -c -
           tar --zstd -xf "$SDK_FILE"
 
-      - name: Verify SDK target and architecture
+      - name: Verify KT-708 package target
         run: |
           set -eu
           cd "$SDK_DIR"
           make defconfig
           grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
           grep -q '^CONFIG_TARGET_ipq40xx_generic=y$' .config
-          echo "KT-708 target verified: $KT708_TARGET"
-          echo "Expected package architecture: $KT708_ARCH"
-          grep -R "CONFIG.*${KT708_ARCH}" .config include target 2>/dev/null || true
+          echo "KT-708 package target verified: ${KT708_TARGET}"
+          echo "Expected package architecture: ${KT708_ARCH}"
 
       - name: Prepare required feeds
         run: |
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
+          ./scripts/feeds install -a
           test -f feeds/luci/luci.mk
-          test -f feeds/packages/net/sing-box/Makefile || test -f feeds/packages/*/sing-box/Makefile
+          test -f feeds/packages/net/sing-box/Makefile
 
       - name: Copy project packages
         run: |
@@ -232,14 +230,14 @@ jobs:
           set -eu
           mkdir -p "$GITHUB_WORKSPACE/artifacts-kt708"
           find "$SDK_DIR/bin/packages" -type f \
-            \( -name 'singbox-manager-*.ipk' -o -name 'luci-app-singbox-*.ipk' \) \
+            \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
             -exec cp {} "$GITHUB_WORKSPACE/artifacts-kt708/" \;
-          test -n "$(find "$GITHUB_WORKSPACE/artifacts-kt708" -type f -name '*.ipk' -print -quit)"
+          test -n "$(find "$GITHUB_WORKSPACE/artifacts-kt708" -type f -name '*.apk' -print -quit)"
           ls -lh "$GITHUB_WORKSPACE/artifacts-kt708"
 
       - name: Upload KT-708 packages
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ env.KT708_OPENWRT_VERSION }}-ipq40xx-generic-kt708
-          path: artifacts-kt708/*.ipk
+          name: openwrt-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-kt708-packages
+          path: artifacts-kt708/*.apk
           if-no-files-found: error
