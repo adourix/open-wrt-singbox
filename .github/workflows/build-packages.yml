@@ -112,6 +112,7 @@ jobs:
           find "$SDK_DIR/bin/packages" -type f \
             \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
             -exec cp {} "$GITHUB_WORKSPACE/artifacts/" \;
+          test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
           ls -lh "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload packages
@@ -141,14 +142,27 @@ jobs:
         run: |
           set -eu
           if [ -n "${INPUT_SDK_URL:-}" ]; then
+            case "$INPUT_SDK_URL" in
+              https://downloads.openwrt.org/*/targets/ipq40xx/generic/openwrt-sdk-*.tar.zst) ;;
+              *) echo "Invalid KT-708 SDK URL" >&2; exit 1 ;;
+            esac
             SDK_URL="$INPUT_SDK_URL"
           else
             INDEX_URL="https://downloads.openwrt.org/snapshots/targets/${KT708_TARGET}/"
-            SDK_FILE="$(wget -qO- "$INDEX_URL" | grep -oE 'openwrt-sdk-[^"< ]+\.tar\.zst' | head -n 1)"
-            [ -n "$SDK_FILE" ]
+            SDK_FILE="$(wget -qO- "$INDEX_URL" \
+              | sed -n 's/.*href="\([^\"]*openwrt-sdk-[^\"]*Linux-x86_64\.tar\.zst\)".*/\1/p' \
+              | head -n 1)"
+            if [ -z "$SDK_FILE" ]; then
+              echo "No Linux-x86_64 SDK found in $INDEX_URL" >&2
+              exit 1
+            fi
             SDK_URL="${INDEX_URL}${SDK_FILE}"
           fi
           SDK_FILE="$(basename "$SDK_URL")"
+          case "$SDK_FILE" in
+            openwrt-sdk-*.tar.zst) ;;
+            *) echo "Resolved file is not an OpenWrt SDK: $SDK_FILE" >&2; exit 1 ;;
+          esac
           echo "SDK_FILE=$SDK_FILE" >> "$GITHUB_ENV"
           echo "SDK_URL=$SDK_URL" >> "$GITHUB_ENV"
           echo "SDK_DIR=$PWD/${SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
@@ -164,10 +178,12 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          echo "Expected target: $KT708_TARGET"
+          make defconfig
+          grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
+          grep -q '^CONFIG_TARGET_ipq40xx_generic=y$' .config
+          echo "KT-708 target verified: $KT708_TARGET"
           echo "Expected package architecture: $KT708_ARCH"
-          echo "SDK directory: $SDK_DIR"
-          grep -q "ipq40xx" .config || true
+          grep -R "CONFIG.*${KT708_ARCH}" .config include target 2>/dev/null || true
 
       - name: Prepare required feeds
         run: |
@@ -186,7 +202,6 @@ jobs:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           cd "$SDK_DIR"
-          make defconfig
           LOG="$GITHUB_WORKSPACE/build-kt708.log"
           if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
             echo "::group::Context before the first make failure"
