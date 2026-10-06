@@ -1,5 +1,6 @@
 #!/bin/sh
 # Generate deterministic sing-box 1.13.x configuration from a normalized profile.
+# The generated config matches the runtime schema used by the OpenWrt service.
 
 generate_config() {
     profile=$1
@@ -45,43 +46,50 @@ generate_config() {
         if $p.tls.enabled then
           {enabled:true}
           + (if $p.tls.server_name != null then {server_name:$p.tls.server_name} else {} end)
-          + (if $p.tls.insecure then {insecure:true} else {} end)
           + (if $p.tls.alpn != null then {alpn:$p.tls.alpn} else {} end)
+          + (if $p.tls.insecure then {insecure:true} else {} end)
           + (if $p.tls.utls != null then {utls:$p.tls.utls} else {} end)
           + (if $p.tls.reality != null then {reality:$p.tls.reality} else {} end)
         else null end;
       def transport:
-        if $p.transport.type=="ws" then {type:"ws",path:$p.transport.path,headers:$p.transport.headers}
-        elif $p.transport.type=="grpc" then {type:"grpc",service_name:$p.transport.service_name}
+        if $p.transport.type=="ws" then
+          {type:"ws",path:$p.transport.path}
+          + (if ($p.transport.headers|length)>0 then {headers:$p.transport.headers} else {} end)
+        elif $p.transport.type=="grpc" then
+          {type:"grpc",service_name:$p.transport.service_name}
         else null end;
       def proxy_outbound:
-        ({type:$p.protocol,tag:"proxy",server:$p.server,server_port:$p.server_port,uuid:$p.uuid}
+        ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid}
         + (if $p.protocol=="vmess" then {alter_id:$p.alter_id,security:$p.security}
            elif $p.flow != null then {flow:$p.flow} else {} end)
         + (if tls != null then {tls:tls} else {} end)
         + (if transport != null then {transport:transport} else {} end));
       {
-        log:{level:"warn"},
+        log:{level:"info"},
+        inbounds:[{
+          type:"tun", tag:"tun-in", interface_name:"tun0",
+          address:["172.19.0.1/30"], auto_route:true, auto_redirect:true,
+          strict_route:true
+        }],
         dns:{
-          servers:[{type:"local",tag:"local"}],
-          final:"local",
+          servers:[
+            {type:"udp",tag:"configured-dns-0",server:"1.1.1.1",server_port:53},
+            {type:"udp",tag:"configured-dns-1",server:"8.8.8.8",server_port:53}
+          ],
+          final:"configured-dns-0",
           strategy:"ipv4_only"
         },
-        inbounds:[{
-          type:"tun", tag:"tun-in", interface_name:"singtun0",
-          address:["172.19.0.1/30"], auto_route:true, auto_redirect:true,
-          strict_route:false
-        }],
-        outbounds:[proxy_outbound,{type:"direct",tag:"direct"}],
+        outbounds:[
+          {type:"direct",tag:"direct"},
+          proxy_outbound
+        ],
         route:{
           auto_detect_interface:true,
-          default_domain_resolver:"local",
           rules:[
-            {action:"sniff"},
-            {protocol:"dns",action:"hijack-dns"},
-            {ip_is_private:true,outbound:"direct"}
+            {ip_cidr:["1.1.1.1/32","8.8.8.8/32"],outbound:"direct"}
           ],
-          final:"proxy"
+          default_domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"},
+          final:"proxy-out"
         }
       }'
 }
