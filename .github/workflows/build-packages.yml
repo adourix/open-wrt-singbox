@@ -76,6 +76,7 @@ jobs:
 
       - name: Prepare required feeds
         run: |
+          set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
           ./scripts/feeds install -a
@@ -84,23 +85,29 @@ jobs:
 
       - name: Copy project packages
         run: |
+          set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
 
       - name: Configure package metadata
         run: |
+          set -eu
           cd "$SDK_DIR"
           make defconfig
+          test -f package/singbox-manager/Makefile
+          test -f package/luci-app-singbox/Makefile
+          grep -q 'DEPENDS:=+sing-box-tiny' package/singbox-manager/Makefile
 
       - name: Build packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
+          set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build.log"
           if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
             echo "::group::Context before the first make failure"
-            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 80 "$LOG"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 100 "$LOG"
             echo "::endgroup::"
             exit 1
           fi
@@ -177,6 +184,7 @@ jobs:
 
       - name: Prepare required feeds
         run: |
+          set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
           ./scripts/feeds install -a
@@ -185,23 +193,29 @@ jobs:
 
       - name: Copy project packages
         run: |
+          set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
 
       - name: Configure package metadata
         run: |
+          set -eu
           cd "$SDK_DIR"
           make defconfig
+          test -f package/singbox-manager/Makefile
+          test -f package/luci-app-singbox/Makefile
+          grep -q 'DEPENDS:=+sing-box-tiny' package/singbox-manager/Makefile
 
       - name: Build KT-708 packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
+          set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-kt708.log"
           if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
             echo "::group::Context before the first make failure"
-            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 80 "$LOG"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 100 "$LOG"
             echo "::endgroup::"
             exit 1
           fi
