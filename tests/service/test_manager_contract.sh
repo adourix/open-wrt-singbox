@@ -49,10 +49,11 @@ grep -F 'Configuration confirmed' "$MANAGER" >/dev/null
 grep -F 'ROLLBACK_TIMER_CHILD=1 rollback_pending' "$MANAGER" >/dev/null
 grep -F 'ROLLBACK_TIMER_CHILD' "$MANAGER" >/dev/null
 
-# The manager is intentionally a standalone runtime package in the SDK: its
-# dependencies must remain install-time metadata, not SDK build dependencies.
-grep -F 'EXTRA_DEPENDS:=sing-box (>= 0) jq (>= 0) nftables (>= 0) uclient-fetch (>= 0) kmod-tun (>= 0) kmod-nfnetlink-queue (>= 0) kmod-nft-queue (>= 0) kmod-inet-diag (>= 0)' "$PACKAGE" >/dev/null
-if grep -F 'DEPENDS:=+sing-box' "$PACKAGE" >/dev/null; then
+# The manager is intentionally a standalone runtime package in the SDK. Use
+# normal OpenWrt DEPENDS metadata so the SDK can resolve packages from feeds,
+# while the resulting package still carries its runtime dependencies.
+grep -F 'DEPENDS:=+sing-box +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag' "$PACKAGE" >/dev/null
+if grep -F 'EXTRA_DEPENDS:=' "$PACKAGE" >/dev/null; then
     exit 1
 fi
 
