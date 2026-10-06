@@ -24,7 +24,7 @@ on:
           - x86_64
           - both
       kt708_sdk_url:
-        description: "Optional exact KT-708 SDK tarball URL. Leave empty to use the configured snapshot SDK."
+        description: "Optional exact KT-708 SDK tarball URL. Leave empty to use the latest ipq40xx/generic snapshot SDK."
         required: false
         type: string
 
@@ -41,7 +41,6 @@ env:
   KT708_OPENWRT_VERSION: "24.10-SNAPSHOT"
   KT708_TARGET: "ipq40xx/generic"
   KT708_ARCH: "arm_cortex-a7_neon-vfpv4"
-  KT708_SDK_FILE: openwrt-sdk-24.10-SNAPSHOT-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64.tar.zst
 
 jobs:
   build-x86_64:
@@ -143,14 +142,17 @@ jobs:
           set -eu
           if [ -n "${INPUT_SDK_URL:-}" ]; then
             SDK_URL="$INPUT_SDK_URL"
-            SDK_FILE="$(basename "$SDK_URL")"
           else
-            SDK_FILE="$KT708_SDK_FILE"
-            SDK_URL="https://downloads.openwrt.org/snapshots/targets/${KT708_TARGET}/$SDK_FILE"
+            INDEX_URL="https://downloads.openwrt.org/snapshots/targets/${KT708_TARGET}/"
+            SDK_FILE="$(wget -qO- "$INDEX_URL" | grep -oE 'openwrt-sdk-[^"< ]+\.tar\.zst' | head -n 1)"
+            [ -n "$SDK_FILE" ]
+            SDK_URL="${INDEX_URL}${SDK_FILE}"
           fi
+          SDK_FILE="$(basename "$SDK_URL")"
           echo "SDK_FILE=$SDK_FILE" >> "$GITHUB_ENV"
           echo "SDK_URL=$SDK_URL" >> "$GITHUB_ENV"
           echo "SDK_DIR=$PWD/${SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
+          echo "Using SDK: $SDK_URL"
 
       - name: Download KT-708 SDK
         run: |
@@ -162,11 +164,10 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          grep -q "ipq40xx/generic" .config 2>/dev/null || true
           echo "Expected target: $KT708_TARGET"
           echo "Expected package architecture: $KT708_ARCH"
           echo "SDK directory: $SDK_DIR"
-          test -f feeds.conf.default || true
+          grep -q "ipq40xx" .config || true
 
       - name: Prepare required feeds
         run: |
