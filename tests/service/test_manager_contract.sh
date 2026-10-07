@@ -15,6 +15,8 @@ grep -F 'if ! verify_runtime' "$MANAGER" >/dev/null
 grep -F 'process_running()' "$MANAGER" >/dev/null
 grep -F 'tun_exists()' "$MANAGER" >/dev/null
 grep -F 'routing_exists()' "$MANAGER" >/dev/null
+grep -F 'ip link show tun0' "$MANAGER" >/dev/null
+grep -F 'dev tun0' "$MANAGER" >/dev/null
 
 # A pending commit-confirm state must block Start/Restart and duplicate Apply.
 grep -F 'Configuration confirmation is pending' "$MANAGER" >/dev/null
@@ -49,10 +51,9 @@ grep -F 'Configuration confirmed' "$MANAGER" >/dev/null
 grep -F 'ROLLBACK_TIMER_CHILD=1 rollback_pending' "$MANAGER" >/dev/null
 grep -F 'ROLLBACK_TIMER_CHILD' "$MANAGER" >/dev/null
 
-# The manager is intentionally a standalone runtime package in the SDK. Use
-# normal OpenWrt DEPENDS metadata so the SDK can resolve packages from feeds,
-# while the resulting package still carries its runtime dependencies.
-grep -F 'DEPENDS:=+sing-box +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag' "$PACKAGE" >/dev/null
+# The manager is intentionally a standalone runtime package in the SDK. Keep
+# the lightweight sing-box-tiny dependency to avoid the sing-box package cycle.
+grep -F 'DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag' "$PACKAGE" >/dev/null
 if grep -F 'EXTRA_DEPENDS:=' "$PACKAGE" >/dev/null; then
     exit 1
 fi
