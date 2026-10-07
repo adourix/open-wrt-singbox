@@ -29,18 +29,18 @@ status_json() {
     if command -v pidof >/dev/null 2>&1 && pidof sing-box >/dev/null 2>&1; then
         running=true
         state=RUNNING
-        ip link show singtun0 >/dev/null 2>&1 && tun=true
-        ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)' && routing=true
+        ip link show tun0 >/dev/null 2>&1 && tun=true
+        ip route show table all 2>/dev/null | grep -q '[[:space:]]dev tun0\([[:space:]]\|$\)' && routing=true
     elif [ "$enabled" = true ]; then
         state=ERROR
     fi
 
     if [ -f "$CONFIG" ]; then
-        protocol=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | .type // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        server=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | .server // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        server_port=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | .server_port // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        transport=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | .transport.type // "tcp"' "$CONFIG" 2>/dev/null | head -n 1)
-        tls=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy") | (.tls.enabled // false)' "$CONFIG" 2>/dev/null | head -n 1)
+        protocol=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .type // empty' "$CONFIG" 2>/dev/null | head -n 1)
+        server=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server // empty' "$CONFIG" 2>/dev/null | head -n 1)
+        server_port=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server_port // empty' "$CONFIG" 2>/dev/null | head -n 1)
+        transport=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .transport.type // "tcp"' "$CONFIG" 2>/dev/null | head -n 1)
+        tls=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | (.tls.enabled // false)' "$CONFIG" 2>/dev/null | head -n 1)
     fi
 
     jq -cn \
