@@ -32,11 +32,16 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # x86_64 (OpenWrt 25.12, apk)
   OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
-  KT708_SDK_FILE: openwrt-sdk-25.12.5-ipq40xx-generic_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst
+  # KT-708 (OpenWrt 25.12, apk) - same release as the x86_64 VM
+  KT708_OPENWRT_VERSION: "25.12.5"
   KT708_TARGET: "ipq40xx/generic"
   KT708_ARCH: "arm_cortex-a7_neon-vfpv4"
+  KT708_SDK_FILE: openwrt-sdk-25.12.5-ipq40xx-generic_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst
+  # Taken from https://downloads.openwrt.org/releases/25.12.5/targets/ipq40xx/generic/
+  KT708_SDK_SHA256: af3d15643f8459335b1c98dc97dd47897d2d8e825a990a161b16b43de2281515
 
 jobs:
   build-x86_64:
@@ -157,30 +162,34 @@ jobs:
           path: ${{ env.KT708_SDK_FILE }}
           key: sdk-${{ env.KT708_SDK_FILE }}
 
-      - name: Download and verify KT-708 SDK
+      - name: Download and verify KT-708 SDK (ipq40xx/generic)
         run: |
           set -eu
-          BASE="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${KT708_TARGET}"
+          BASE="https://downloads.openwrt.org/releases/${KT708_OPENWRT_VERSION}/targets/${KT708_TARGET}"
           wget -q "$BASE/sha256sums"
-          EXPECTED_SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
-          test -n "$EXPECTED_SHA"
+          OFFICIAL_SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
+          test -n "$OFFICIAL_SHA"
+          if [ "$OFFICIAL_SHA" != "$KT708_SDK_SHA256" ]; then
+            echo "::error::Official SHA256 for $KT708_SDK_FILE changed ($OFFICIAL_SHA). Review before updating KT708_SDK_SHA256."
+            exit 1
+          fi
           if [ -f "$KT708_SDK_FILE" ]; then
-            printf '%s  %s\n' "$EXPECTED_SHA" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"
+            printf '%s  %s\n' "$KT708_SDK_SHA256" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"
           fi
           [ -f "$KT708_SDK_FILE" ] || wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
-          printf '%s  %s\n' "$EXPECTED_SHA" "$KT708_SDK_FILE" | sha256sum -c -
+          printf '%s  %s\n' "$KT708_SDK_SHA256" "$KT708_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$KT708_SDK_FILE"
           echo "SDK_DIR=$PWD/${KT708_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
 
-      - name: Verify KT-708 package target
+      - name: Verify SDK target and package architecture
         run: |
           set -eu
           cd "$SDK_DIR"
           make defconfig
+          grep -E '^CONFIG_TARGET_(ipq40xx|ARCH_PACKAGES)' .config
           grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
-          grep -q '^CONFIG_TARGET_ipq40xx_generic=y$' .config
-          echo "KT-708 package target verified: ${KT708_TARGET}"
-          echo "Expected package architecture: ${KT708_ARCH}"
+          grep -q "^CONFIG_TARGET_ARCH_PACKAGES=\"${KT708_ARCH}\"$" .config
+          echo "Verified target ${KT708_TARGET}, package arch ${KT708_ARCH}"
 
       - name: Prepare required feeds
         run: |
@@ -231,16 +240,22 @@ jobs:
       - name: Collect KT-708 packages
         run: |
           set -eu
-          mkdir -p "$GITHUB_WORKSPACE/artifacts-kt708"
+          OUT="$GITHUB_WORKSPACE/artifacts-kt708"
+          mkdir -p "$OUT"
           find "$SDK_DIR/bin/packages" -type f \
             \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
-            -exec cp {} "$GITHUB_WORKSPACE/artifacts-kt708/" \;
-          test -n "$(find "$GITHUB_WORKSPACE/artifacts-kt708" -type f -name '*.apk' -print -quit)"
-          ls -lh "$GITHUB_WORKSPACE/artifacts-kt708"
+            -exec cp {} "$OUT/" \;
+          for name in singbox-manager luci-app-singbox; do
+            if [ -z "$(find "$OUT" -type f -name "${name}-*.apk" -print -quit)" ]; then
+              echo "::error::No ${name}-*.apk was produced"
+              exit 1
+            fi
+          done
+          ls -lh "$OUT"
 
       - name: Upload KT-708 packages
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-kt708-packages
+          name: openwrt-${{ env.KT708_OPENWRT_VERSION }}-ipq40xx-generic-${{ env.KT708_ARCH }}-packages
           path: artifacts-kt708/*.apk
           if-no-files-found: error
