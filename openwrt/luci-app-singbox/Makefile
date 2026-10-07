@@ -36,8 +36,12 @@ endef
 define Package/luci-app-singbox/install
 	$(INSTALL_DIR) $(1)/www
 	$(CP) ./htdocs/. $(1)/www/
-	$(INSTALL_DIR) $(1)/
-	$(CP) ./root/. $(1)/
+	$(INSTALL_DIR) $(1)/usr/libexec/rpcd
+	$(INSTALL_BIN) ./root/usr/libexec/rpcd/luci.singbox $(1)/usr/libexec/rpcd/luci.singbox
+	$(INSTALL_DIR) $(1)/usr/share/luci/menu.d
+	$(CP) ./root/usr/share/luci/menu.d/. $(1)/usr/share/luci/menu.d/
+	$(INSTALL_DIR) $(1)/usr/share/rpcd/acl.d
+	$(CP) ./root/usr/share/rpcd/acl.d/. $(1)/usr/share/rpcd/acl.d/
 endef
 
 $(eval $(call BuildPackage,luci-app-singbox))
