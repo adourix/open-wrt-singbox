@@ -80,10 +80,11 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          ./scripts/feeds update packages luci
-          ./scripts/feeds install luci-base rpcd
-          ./scripts/feeds install sing-box
-          test -f feeds/luci/luci.mk
+          # Update only. Do NOT `feeds install`: installed feed packages become
+          # build dependencies, so the SDK would compile sing-box-tiny (Go) and
+          # luci-base from source (20+ minutes, then fails). They stay runtime
+          # dependencies that apk resolves on the router.
+          ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
 
       - name: Copy project packages
@@ -198,10 +199,11 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          ./scripts/feeds update packages luci
-          ./scripts/feeds install luci-base rpcd
-          ./scripts/feeds install sing-box
-          test -f feeds/luci/luci.mk
+          # Update only. Do NOT `feeds install`: installed feed packages become
+          # build dependencies, so the SDK would compile sing-box-tiny (Go) and
+          # luci-base from source (20+ minutes, then fails). They stay runtime
+          # dependencies that apk resolves on the router.
+          ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
 
       - name: Copy project packages
