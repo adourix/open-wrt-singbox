@@ -75,8 +75,8 @@ restore_previous_uci() {
 }
 config_valid() { [ -f "$CONFIG" ] && "$SINGBOX_BIN" check -c "$CONFIG" >/dev/null 2>&1; }
 version_valid() { load_core && check_singbox_version; }
-tun_exists() { command -v ip >/dev/null 2>&1 && ip link show singtun0 >/dev/null 2>&1; }
-routing_exists() { command -v ip >/dev/null 2>&1 && ip route show table all 2>/dev/null | grep -q '[[:space:]]dev singtun0\([[:space:]]\|$\)'; }
+tun_exists() { command -v ip >/dev/null 2>&1 && ip link show tun0 >/dev/null 2>&1; }
+routing_exists() { command -v ip >/dev/null 2>&1 && ip route show table all 2>/dev/null | grep -q '[[:space:]]dev tun0\([[:space:]]\|$\)'; }
 process_running() { command -v pidof >/dev/null 2>&1 && pidof "$SINGBOX_BIN" >/dev/null 2>&1; }
 connectivity_test() {
     command -v uclient-fetch >/dev/null 2>&1 || return 1
@@ -89,8 +89,8 @@ connectivity_test() {
 }
 runtime_failure() {
     if ! process_running; then printf '%s\n' 'process is not running' >&2; return 1; fi
-    if ! tun_exists; then printf '%s\n' 'TUN interface singtun0 is missing' >&2; return 1; fi
-    if ! routing_exists; then printf '%s\n' 'singtun0 routing is missing' >&2; return 1; fi
+    if ! tun_exists; then printf '%s\n' 'TUN interface tun0 is missing' >&2; return 1; fi
+    if ! routing_exists; then printf '%s\n' 'tun0 routing is missing' >&2; return 1; fi
     if ! connectivity_test; then printf '%s\n' 'connectivity test failed' >&2; return 1; fi
     return 0
 }
@@ -142,7 +142,7 @@ validate() { if config_valid; then printf '%s\n' 'Configuration: valid'; return 
 status() {
     if process_running; then printf '%s\n' 'State: RUNNING'; elif [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ]; then printf '%s\n' 'State: ERROR'; else printf '%s\n' 'State: STOPPED'; fi
     if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
-    if tun_exists; then printf '%s\n' 'TUN: singtun0'; else printf '%s\n' 'TUN: absent'; fi
+    if tun_exists; then printf '%s\n' 'TUN: tun0'; else printf '%s\n' 'TUN: absent'; fi
     if routing_exists; then printf '%s\n' 'Routing: OK'; else printf '%s\n' 'Routing: absent'; fi
     if [ -f "$PENDING" ] || [ -f "$PENDING_STATE" ]; then printf '%s\n' 'Apply: awaiting confirmation'; else printf '%s\n' 'Apply: confirmed'; fi
 }
