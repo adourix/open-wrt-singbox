@@ -32,15 +32,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # x86_64 (OpenWrt 25.12, apk)
   OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
-  # KT-708 (OpenWrt 25.12, apk) - same release as the x86_64 VM
   KT708_OPENWRT_VERSION: "25.12.5"
   KT708_TARGET: "ipq40xx/generic"
   KT708_ARCH: "arm_cortex-a7_neon-vfpv4"
   KT708_SDK_FILE: openwrt-sdk-25.12.5-ipq40xx-generic_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst
-  # Taken from https://downloads.openwrt.org/releases/25.12.5/targets/ipq40xx/generic/
   KT708_SDK_SHA256: af3d15643f8459335b1c98dc97dd47897d2d8e825a990a161b16b43de2281515
 
 jobs:
@@ -84,7 +81,8 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
-          ./scripts/feeds install -a
+          ./scripts/feeds install luci-base rpcd
+          ./scripts/feeds install sing-box
           test -f feeds/luci/luci.mk
           test -f feeds/packages/net/sing-box/Makefile
 
@@ -132,7 +130,12 @@ jobs:
           find "$SDK_DIR/bin/packages" -type f \
             \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
             -exec cp {} "$GITHUB_WORKSPACE/artifacts/" \;
-          test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
+          for name in singbox-manager luci-app-singbox; do
+            if [ -z "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name "${name}-*.apk" -print -quit)" ]; then
+              echo "::error::No ${name}-*.apk was produced"
+              exit 1
+            fi
+          done
           ls -lh "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload packages
@@ -196,7 +199,8 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages luci
-          ./scripts/feeds install -a
+          ./scripts/feeds install luci-base rpcd
+          ./scripts/feeds install sing-box
           test -f feeds/luci/luci.mk
           test -f feeds/packages/net/sing-box/Makefile
 
