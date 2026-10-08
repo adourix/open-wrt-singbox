@@ -38,14 +38,14 @@ get_auto_start() {
         case "$(uci -q get cowboy-bebop.main.auto_start 2>/dev/null)" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
     fi
 }
-set_enabled() { uci set cowboy-bebop.main.enabled="$1" && uci commit singbox; chmod 600 /etc/config/cowboy-bebop 2>/dev/null || true; }
+set_enabled() { uci set cowboy-bebop.main.enabled="$1" && uci commit cowboy-bebop; chmod 600 /etc/config/cowboy-bebop 2>/dev/null || true; }
 sync_autostart() { case "$(get_auto_start)" in 1) "$INIT" enable ;; *) "$INIT" disable ;; esac; }
 persist_desired_state() {
     uci set cowboy-bebop.main.proxy_url="$1" || return 1
     uci set cowboy-bebop.main.allow_insecure="$2" || return 1
     uci set cowboy-bebop.main.auto_start="$3" || return 1
     uci set cowboy-bebop.main.enabled="$4" || return 1
-    uci commit singbox || return 1
+    uci commit cowboy-bebop || return 1
     chmod 600 /etc/config/cowboy-bebop 2>/dev/null || true
 }
 capture_previous_state() {
@@ -98,7 +98,7 @@ verify_runtime() { sleep 1; runtime_failure; }
 restore_current_config() {
     if [ -f "$BACKUP" ]; then
         if restore_backup "$CONFIG" "$BACKUP"; then return 0; fi
-        logger -t singbox "configured backup is invalid; removing active configuration"
+        logger -t cowboy-bebop "configured backup is invalid; removing active configuration"
     fi
     rm -f "$CONFIG" "$CANDIDATE"
     return 0
@@ -114,7 +114,7 @@ restore_and_recover() {
     if [ "$PENDING_ENABLED" = "1" ]; then
         "$INIT" enable >/dev/null 2>&1 || true
         if "$INIT" start >/dev/null 2>&1 && verify_runtime; then :; else
-            logger -t singbox "previous sing-box state could not be restored; disabling safely"
+            logger -t cowboy-bebop "previous sing-box state could not be restored; disabling safely"
             set_enabled 0 >/dev/null 2>&1 || true; "$INIT" disable >/dev/null 2>&1 || true; stop_runtime
             rm -f "$PENDING" "$PENDING_STATE"; return 1
         fi
