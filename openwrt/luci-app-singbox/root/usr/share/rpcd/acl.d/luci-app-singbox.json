@@ -1,14 +1,14 @@
 {
-  "luci-app-singbox": {
-    "description": "Allow LuCI to manage singbox without exposing proxy credentials",
+  "luci-app-cowboy-bebop": {
+    "description": "Allow LuCI to manage Cowboy Bebop Manager without exposing proxy credentials",
     "read": {
       "ubus": {
-        "luci.singbox": ["status", "health", "logs", "preview", "confirm"]
+        "luci.cowboy_bebop": ["status", "health", "logs", "preview", "confirm"]
       }
     },
     "write": {
       "ubus": {
-        "luci.singbox": ["apply", "start", "stop", "set_enabled", "confirm"]
+        "luci.cowboy_bebop": ["apply", "start", "stop", "set_enabled", "confirm"]
       }
     }
   }
