@@ -12,6 +12,8 @@ INIT=${INIT:-/etc/init.d/cowboy-bebop}
 SINGBOX_BIN=${SINGBOX_BIN:-sing-box}
 FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
 ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
+CONNECTIVITY_TIMEOUT=${CONNECTIVITY_TIMEOUT:-8}
+CONNECTIVITY_TRIES=${CONNECTIVITY_TRIES:-2}
 
 load_core() {
     . "$MANAGER_LIB/protocol/detector.sh" || return 1
@@ -81,9 +83,12 @@ process_running() { command -v pidof >/dev/null 2>&1 && pidof "$SINGBOX_BIN" >/d
 connectivity_test() {
     command -v uclient-fetch >/dev/null 2>&1 || return 1
     tries=0
-    while [ "$tries" -lt 3 ]; do
-        if uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1; then return 0; fi
-        tries=$((tries + 1)); sleep 1
+    while [ "$tries" -lt "$CONNECTIVITY_TRIES" ]; do
+        if uclient-fetch -q -T "$CONNECTIVITY_TIMEOUT" -O /dev/null https://api.ipify.org >/dev/null 2>&1; then
+            return 0
+        fi
+        tries=$((tries + 1))
+        sleep 1
     done
     return 1
 }
@@ -91,14 +96,32 @@ runtime_failure() {
     if ! process_running; then printf '%s\n' 'process is not running' >&2; return 1; fi
     if ! tun_exists; then printf '%s\n' 'TUN interface tun0 is missing' >&2; return 1; fi
     if ! routing_exists; then printf '%s\n' 'tun0 routing is missing' >&2; return 1; fi
-    if ! connectivity_test; then printf '%s\n' 'connectivity test failed' >&2; return 1; fi
+    if ! connectivity_test; then
+        logger -t cowboy-bebop 'connectivity verification warning: uclient-fetch to api.ipify.org failed; keeping runtime active'
+    fi
     return 0
 }
 verify_runtime() { sleep 1; runtime_failure; }
+ensure_backup() {
+    [ -f "$CONFIG" ] || return 1
+    if [ ! -f "$BACKUP" ]; then
+        umask 077
+        cp "$CONFIG" "$BACKUP" || return 1
+        chmod 600 "$BACKUP" 2>/dev/null || true
+    fi
+    return 0
+}
+promote_current_backup() {
+    [ -f "$CONFIG" ] || return 1
+    umask 077
+    cp "$CONFIG" "$BACKUP" || return 1
+    chmod 600 "$BACKUP" 2>/dev/null || true
+    return 0
+}
 restore_current_config() {
     if [ -f "$BACKUP" ]; then
         if restore_backup "$CONFIG" "$BACKUP"; then return 0; fi
-        logger -t cowboy-bebop "configured backup is invalid; removing active configuration"
+        logger -t cowboy-bebop 'configured backup is invalid; removing active configuration'
     fi
     rm -f "$CONFIG" "$CANDIDATE"
     return 0
@@ -114,7 +137,7 @@ restore_and_recover() {
     if [ "$PENDING_ENABLED" = "1" ]; then
         "$INIT" enable >/dev/null 2>&1 || true
         if "$INIT" start >/dev/null 2>&1 && verify_runtime; then :; else
-            logger -t cowboy-bebop "previous sing-box state could not be restored; disabling safely"
+            logger -t cowboy-bebop 'previous sing-box state could not be restored; disabling safely'
             set_enabled 0 >/dev/null 2>&1 || true; "$INIT" disable >/dev/null 2>&1 || true; stop_runtime
             rm -f "$PENDING" "$PENDING_STATE"; return 1
         fi
@@ -131,6 +154,7 @@ cancel_rollback_timer() {
     rm -f "$ROLLBACK_PID"
 }
 schedule_rollback() {
+    ensure_backup || return 1
     cancel_rollback_timer
     printf '%s\n' pending > "$PENDING" || return 1
     ( sleep "$ROLLBACK_DELAY"; [ -f "$PENDING" ] || exit 0; ROLLBACK_TIMER_CHILD=1 rollback_pending >/dev/null 2>&1 || true ) >/dev/null 2>&1 &
@@ -154,6 +178,7 @@ health() {
     if process_running; then printf '%s\n' 'process:        OK'; else printf '%s\n' 'process:        STOPPED'; failed=1; fi
     if tun_exists; then printf '%s\n' 'TUN:            OK'; else printf '%s\n' 'TUN:            ERROR'; failed=1; fi
     if routing_exists; then printf '%s\n' 'routing:        OK'; else printf '%s\n' 'routing:        ERROR'; failed=1; fi
+    if connectivity_test; then printf '%s\n' 'connectivity:   OK'; else printf '%s\n' 'connectivity:   WARN'; fi
     return "$failed"
 }
 start() {
@@ -187,6 +212,7 @@ confirm() {
         rollback_pending || { printf '%s\n' 'Rollback failed; sing-box was disabled for safety' >&2; set_enabled 0 >/dev/null 2>&1 || true; stop_runtime; }
         return 1
     fi
+    promote_current_backup || { printf '%s\n' 'Unable to promote current configuration to known-good backup' >&2; return 1; }
     cancel_rollback_timer; rm -f "$PENDING" "$PENDING_STATE"; printf '%s\n' 'Configuration confirmed'
 }
 apply() {
