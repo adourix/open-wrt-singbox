@@ -1,0 +1,12 @@
+#!/bin/sh
+export INIT=/etc/init.d/cowboy-bebop
+export MANAGER_LIB=/usr/lib/cowboy-bebop
+export CONFIG_DIR=/etc/cowboy-bebop
+export CONFIG=/etc/cowboy-bebop/config.json
+export CANDIDATE=/etc/cowboy-bebop/config.json.new
+export BACKUP=/etc/cowboy-bebop/config.json.bak
+export PENDING=/etc/cowboy-bebop/config.pending
+export PENDING_STATE=/etc/cowboy-bebop/state.pending.json
+export SINGBOX_AUTO_START=1
+export SINGBOX_ALLOW_INSECURE=1
+exec /usr/lib/cowboy-bebop/service/manager.sh "$@"
