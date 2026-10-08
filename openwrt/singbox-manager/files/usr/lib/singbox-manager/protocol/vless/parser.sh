@@ -101,8 +101,10 @@ vless_parse() (
         1|true|yes)
             [ "${VLESS_ALLOW_INSECURE:-0}" = "1" ] ||
                 { vless_error "Insecure TLS requires explicit opt-in"; return 1; }
+            [ "$security" = "tls" ] || [ "$security" = "reality" ] ||
+                { vless_error "Insecure TLS requires TLS or Reality"; return 1; }
             insecure_json=true ;;
-        "") ;;
+        0|false|no|"") ;;
         *) vless_error "Invalid insecure option"; return 1;;
     esac
 
