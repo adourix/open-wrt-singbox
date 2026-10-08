@@ -93,13 +93,13 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
+          cp package/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox package/luci-app-singbox/root/usr/libexec/rpcd/luci.cowboy_bebop
           sed -i \
             -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
             -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
             -e 's/+singbox-manager/+cowboy-bebop-manager/g' \
             -e 's/luci-app-singbox/luci-app-cowboy-bebop/g' \
             -e 's/luci\.singbox/luci.cowboy_bebop/g' \
-            -e 's/Cowboy Bebop Manager LuCI/Cowboy Bebop Manager LuCI/g' \
             package/luci-app-singbox/Makefile
           grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-singbox/Makefile
           grep -q 'Package/cowboy-bebop-manager' package/singbox-manager/Makefile
@@ -223,6 +223,7 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
+          cp package/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox package/luci-app-singbox/root/usr/libexec/rpcd/luci.cowboy_bebop
           sed -i \
             -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
             -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
