@@ -1,17 +1,6 @@
 name: Build Cowboy Bebop Manager Package
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "core/**"
-      - "openwrt/cowboy-bebop-manager/**"
-      - ".github/workflows/build-manager.yml"
-  pull_request:
-    paths:
-      - "core/**"
-      - "openwrt/cowboy-bebop-manager/**"
-      - ".github/workflows/build-manager.yml"
   workflow_dispatch:
     inputs:
       target:
@@ -24,10 +13,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: manager-build-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
@@ -38,7 +23,7 @@ env:
 
 jobs:
   build-x86_64:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'x86_64' || inputs.target == 'both'
+    if: inputs.target == 'x86_64' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +85,7 @@ jobs:
           path: artifacts/*.apk
 
   build-kt708:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'kt708' || inputs.target == 'both'
+    if: inputs.target == 'kt708' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
