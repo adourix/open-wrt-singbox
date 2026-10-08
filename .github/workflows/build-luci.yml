@@ -51,7 +51,6 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages
-          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
@@ -122,7 +121,6 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages
-          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
