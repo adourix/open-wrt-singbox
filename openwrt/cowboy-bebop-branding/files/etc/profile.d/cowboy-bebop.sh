@@ -10,13 +10,19 @@ _cb_tun="down"
 [ -d /sys/class/net/singtun0 ] && _cb_tun="up"
 
 case "$_cb_enabled" in
-  1|yes|true) _cb_proxy="enabled" ;;
-  *) _cb_proxy="disabled" ;;
+  1|yes|true) _cb_proxy="ON" ;;
+  *) _cb_proxy="OFF" ;;
 esac
 
-if [ -n "${NO_COLOR:-}" ]; then
-  printf 'Cowboy Bebop | proxy: %s | TUN: %s\n' "$_cb_proxy" "$_cb_tun"
-else
-  printf '\033[1;33mCowboy Bebop\033[0m | proxy: %s | TUN: %s\n' "$_cb_proxy" "$_cb_tun"
+_cb_version="unknown"
+if command -v sing-box >/dev/null 2>&1; then
+	_cb_version="$(sing-box version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')"
+	[ -n "$_cb_version" ] || _cb_version="unknown"
 fi
-unset _cb_enabled _cb_tun _cb_proxy
+
+if [ -n "${NO_COLOR:-}" ]; then
+  printf 'Cowboy Bebop | proxy: %s | TUN: %s | sing-box: %s\n' "$_cb_proxy" "$_cb_tun" "$_cb_version"
+else
+  printf '\033[1;33mCowboy Bebop\033[0m | proxy: %s | TUN: %s | sing-box: %s\n' "$_cb_proxy" "$_cb_tun" "$_cb_version"
+fi
+unset _cb_enabled _cb_tun _cb_proxy _cb_version
