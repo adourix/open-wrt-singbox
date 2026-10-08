@@ -19,6 +19,13 @@ if [ -f /etc/os-release ]; then
 		-e 's|^HOME_URL=.*|HOME_URL="https://github.com/adourix/open-wrt-singbox"|' \
 		-e 's|^BUG_REPORT_URL=.*|BUG_REPORT_URL="https://github.com/adourix/open-wrt-singbox/issues"|' \
 		/etc/os-release
+
+	# Support contacts for interactive/system identification.
+	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
+		echo 'SUPPORT_PHONE="+20175555667 +01009823007"' >> /etc/os-release
+	else
+		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +01009823007"/' /etc/os-release
+	fi
 fi
 
 exit 0
