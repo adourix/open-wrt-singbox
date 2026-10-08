@@ -47,7 +47,12 @@ jobs:
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
       - name: Prepare feeds
-        run: cd "$SDK_DIR" && ./scripts/feeds update packages && test -f feeds/packages/net/sing-box/Makefile
+        run: |
+          set -eu
+          cd "$SDK_DIR"
+          ./scripts/feeds update packages
+          ./scripts/feeds install -a
+          test -f feeds/packages/net/sing-box/Makefile
       - name: Copy package
         run: |
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" "$SDK_DIR/package/cowboy-bebop-manager"
@@ -116,8 +121,10 @@ jobs:
           grep -q "^CONFIG_TARGET_ARCH_PACKAGES=\"${KT708_ARCH}\"$" .config
       - name: Prepare feeds and package
         run: |
+          set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages
+          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
