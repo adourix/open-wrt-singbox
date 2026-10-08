@@ -1,6 +1,5 @@
 #!/bin/sh
 export INIT=/etc/init.d/cowboy-bebop
-export SINGBOX_PROXY_URL="${SINGBOX_PROXY_URL:-}"
 export SINGBOX_AUTO_START="${SINGBOX_AUTO_START:-1}"
 export SINGBOX_ALLOW_INSECURE="${SINGBOX_ALLOW_INSECURE:-1}"
 exec /usr/lib/singbox-manager/service/manager.sh "$@"
