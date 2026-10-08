@@ -1,5 +1,5 @@
 #!/bin/sh
-uci -q set cowboy-bebop.main.enabled='1'
+uci -q set cowboy-bebop.main.enabled='0'
 uci -q set cowboy-bebop.main.auto_start='1'
 uci -q set cowboy-bebop.main.allow_insecure='1'
 uci -q set cowboy-bebop.main.ipv6_policy='block'
