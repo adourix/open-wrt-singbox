@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-manager
-PKG_RELEASE:=16
+PKG_RELEASE:=17
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 REPLACES:=singbox-manager
@@ -46,6 +46,7 @@ define Package/cowboy-bebop-manager/install
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/config/version.sh $(1)/usr/lib/cowboy-bebop/config/version.sh
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/network/firewall.sh $(1)/usr/lib/cowboy-bebop/network/firewall.sh
 	$(INSTALL_DATA) ./files/usr/lib/singbox-manager/config/templates/1.13.21.json $(1)/usr/lib/cowboy-bebop/config/templates/1.13.21.json
+	$(INSTALL_DATA) ./files/usr/lib/singbox-manager/config/templates/1.12.17.json $(1)/usr/lib/cowboy-bebop/config/templates/1.12.17.json
 
 	$(INSTALL_BIN) ./files/usr/lib/singbox-manager/service/manager.sh $(1)/usr/lib/cowboy-bebop/service/manager.sh
 	sed -i \
