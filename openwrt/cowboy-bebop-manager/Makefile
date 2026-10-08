@@ -60,30 +60,6 @@ define Package/cowboy-bebop-manager/install
 		-e 's/logger -t singbox/logger -t cowboy-bebop/g' \
 		$(1)/usr/lib/cowboy-bebop/service/manager.sh
 
-	# Runtime verification must not make a healthy TUN/routing session fail only
-	# because the router-originated api.ipify.org probe is intercepted or blocked.
-	sed -i \
-		-e '/^connectivity_test() {/a\\    CONNECTIVITY_TIMEOUT=$${CONNECTIVITY_TIMEOUT:-8}; CONNECTIVITY_TRIES=$${CONNECTIVITY_TRIES:-2}' \
-		-e '/if ! connectivity_test; then/{n;s/.*/        logger -t cowboy-bebop "connectivity verification warning: uclient-fetch to api.ipify.org failed; keeping runtime active"/;n;s/.*/    fi/}' \
-		-e '/^schedule_rollback() {/a\\    [ -f "$$(dirname "$$(dirname "$$(dirname "$$(dirname "$$(dirname "$$(dirname "$$(dirname "$$(pwd)")))))))" ] 2>/dev/null || true' \
-		$(1)/usr/lib/cowboy-bebop/service/manager.sh
-
-	# Replace the generated manager with the canonical runtime implementation
-	# when the repository core is available in a source-tree build.
-	if [ -f ./../../core/service/manager.sh ]; then \
-		$(INSTALL_BIN) ./../../core/service/manager.sh $(1)/usr/lib/cowboy-bebop/service/manager.sh; \
-		sed -i \
-			-e 's#/usr/lib/singbox-manager#/usr/lib/cowboy-bebop#g' \
-			-e 's#/etc/singbox#/etc/cowboy-bebop#g' \
-			-e 's#/etc/init.d/singbox#/etc/init.d/cowboy-bebop#g' \
-			-e 's#/etc/config/singbox#/etc/config/cowboy-bebop#g' \
-			-e 's#singbox\\.main#cowboy-bebop.main#g' \
-			-e 's#uci commit singbox#uci commit cowboy-bebop#g' \
-			-e 's#singbox-manager-rollback#cowboy-bebop-rollback#g' \
-			-e 's/logger -t singbox/logger -t cowboy-bebop/g' \
-			$(1)/usr/lib/cowboy-bebop/service/manager.sh; \
-	fi
-
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./files/etc/config/cowboy-bebop $(1)/etc/config/cowboy-bebop
 
