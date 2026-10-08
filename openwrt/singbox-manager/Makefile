@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-manager
-PKG_RELEASE:=13
+PKG_RELEASE:=14
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 REPLACES:=singbox-manager
@@ -59,6 +59,7 @@ define Package/cowboy-bebop-manager/install
 		-e 's/logger -t singbox/logger -t cowboy-bebop/g' \
 		$(1)/usr/lib/cowboy-bebop/service/manager.sh
 
+	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./files/etc/config/cowboy-bebop $(1)/etc/config/cowboy-bebop
 	$(INSTALL_DIR) $(1)/etc/cowboy-bebop
 
