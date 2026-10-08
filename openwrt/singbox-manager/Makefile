@@ -54,6 +54,7 @@ define Package/cowboy-bebop-manager/install
 		-e 's#/etc/init.d/singbox#/etc/init.d/cowboy-bebop#g' \
 		-e 's#/etc/config/singbox#/etc/config/cowboy-bebop#g' \
 		-e 's#singbox\.main#cowboy-bebop.main#g' \
+		-e 's#uci commit singbox#uci commit cowboy-bebop#g' \
 		-e 's#singbox-manager-rollback#cowboy-bebop-rollback#g' \
 		-e 's/logger -t singbox/logger -t cowboy-bebop/g' \
 		$(1)/usr/lib/cowboy-bebop/service/manager.sh
