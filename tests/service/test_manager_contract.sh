@@ -25,7 +25,9 @@ for file in "$MANAGER" "$MIRROR"; do
     grep -F 'rollback_pending' "$file" >/dev/null
     grep -F 'Unable to safely roll back pending configuration' "$file" >/dev/null
     grep -F 'runtime_failure()' "$file" >/dev/null
-    grep -F 'connectivity test failed' "$file" >/dev/null
+    grep -F 'connectivity verification warning' "$file" >/dev/null
+    grep -F 'ensure_backup()' "$file" >/dev/null
+    grep -F 'promote_current_backup()' "$file" >/dev/null
     grep -F 'Current configuration failed runtime verification; rolling back' "$file" >/dev/null
     grep -F 'Configuration confirmed' "$file" >/dev/null
     grep -F 'ROLLBACK_TIMER_CHILD=1 rollback_pending' "$file" >/dev/null
@@ -36,5 +38,7 @@ grep -F 'DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nf
 if grep -F 'EXTRA_DEPENDS:=' "$PACKAGE" >/dev/null; then
     exit 1
 fi
+
+grep -F 'PKG_RELEASE:=18' "$PACKAGE" >/dev/null
 
 printf '%s\n' 'manager lifecycle contract tests: PASS'
