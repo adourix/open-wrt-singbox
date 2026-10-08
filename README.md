@@ -1,4 +1,4 @@
-# OpenWrt Sing-box Manager
+# Cowboy Bebop Manager
 
 A lightweight OpenWrt management application for configuring and controlling sing-box through LuCI.
 
@@ -10,7 +10,6 @@ Phase 1 starts with protocol detection and parsers. The core is designed to run 
 
 See the project specification supplied with this repository, and `docs/openwrt.md` for the pinned OpenWrt/sing-box runtime contract.
 
-
 ## Pinned runtime
 
 - OpenWrt 25.12.5 x86_64
@@ -21,12 +20,16 @@ See the project specification supplied with this repository, and `docs/openwrt.m
 
 ## Runtime packages
 
-- `singbox-manager`
-- `luci-app-singbox`
+- `cowboy-bebop-manager`
+- `luci-app-cowboy-bebop`
 - `sing-box` from the matching OpenWrt feed
 
 The runtime does not require Node.js, Docker, Python, React, Vue, or a permanent
 backend process.
+
+The user-facing OpenWrt service is `cowboy-bebop`, and the LuCI page is named
+`Cowboy Bebop Manager`. Auto Start and insecure-TLS policy are fixed to `1` and
+are intentionally not exposed as UI controls.
 
 ## Test order
 
@@ -34,7 +37,7 @@ backend process.
 2. Build the two OpenWrt packages with the 25.12.5 SDK.
 3. Install them on the OpenWrt x86_64 VM.
 4. Configure one VLESS or VMess URL.
-5. Run `singbox-manager apply`.
-6. Verify `sing-box health`, TUN, routing, DNS, LAN forwarding and connectivity.
+5. Run `cowboy-bebop-manager apply`.
+6. Verify `cowboy-bebop-manager health`, TUN, routing, DNS, LAN forwarding and connectivity.
 7. Test OFF, ON, recovery, reboot and failed-server rollback.
 8. Build the final combined-efi image with `openwrt/imagebuilder`.
