@@ -2,7 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-INIT="$ROOT/openwrt/cowboy-bebop/files/etc/init.d/cowboy-bebop"
+INIT="$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"
 
 # Boot recovery must never leave an unconfirmed first-time config active when
 # there is no valid known-good backup.
