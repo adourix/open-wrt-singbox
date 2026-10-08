@@ -34,8 +34,7 @@ for pair in \
     "core/config/generator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/generator.sh" \
     "core/config/validator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/validator.sh" \
     "core/config/version.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/version.sh" \
-    "core/network/firewall.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/network/firewall.sh" \
-    "core/service/manager.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"; do
+    "core/network/firewall.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/network/firewall.sh"; do
     core_file=${pair%%|*}
     packaged_file=${pair#*|}
     cmp -s "$ROOT/$core_file" "$ROOT/$packaged_file" || {
