@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-branding
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=../../LICENSE
 PKG_MAINTAINER:=Abdulrahman Ayad
