@@ -1,15 +1,6 @@
 name: Build Cowboy Bebop Branding Package
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "openwrt/cowboy-bebop-branding/**"
-      - ".github/workflows/build-branding.yml"
-  pull_request:
-    paths:
-      - "openwrt/cowboy-bebop-branding/**"
-      - ".github/workflows/build-branding.yml"
   workflow_dispatch:
     inputs:
       target:
@@ -17,17 +8,10 @@ on:
         required: true
         default: "both"
         type: choice
-        options:
-          - kt708
-          - x86_64
-          - both
+        options: [kt708, x86_64, both]
 
 permissions:
   contents: read
-
-concurrency:
-  group: branding-build-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   OPENWRT_VERSION: "25.12.5"
@@ -39,7 +23,7 @@ env:
 
 jobs:
   build-x86_64:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'x86_64' || inputs.target == 'both'
+    if: inputs.target == 'x86_64' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -57,20 +41,32 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$X86_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test -n "$SHA"
+          if [ -f "$X86_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c - || rm -f "$X86_SDK_FILE"; fi
           [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE" -O "$X86_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-      - name: Copy and verify package
+      - name: Prepare feeds and packages
         run: |
           set -eu
-          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-branding" "$SDK_DIR/package/cowboy-bebop-branding"
+          cd "$SDK_DIR"
+          ./scripts/feeds update packages
+          test -f feeds/packages/net/sing-box/Makefile
+          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
+          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-branding" package/cowboy-bebop-branding
+          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
+      - name: Verify package metadata
+        run: |
+          set -eu
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=cowboy-bebop-branding$' package/cowboy-bebop-branding/Makefile
+          grep -q '^DEPENDS:=+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
           test -x package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
           test -x package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
       - name: Build package
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           set -eu
           cd "$SDK_DIR"
@@ -85,16 +81,16 @@ jobs:
       - name: Collect package
         run: |
           set -eu
-          mkdir -p artifacts-x86_64
-          find "$SDK_DIR/bin/packages" -type f -name 'cowboy-bebop-branding-*.apk' -exec cp {} artifacts-x86_64/ \;
-          test -n "$(find artifacts-x86_64 -type f -name 'cowboy-bebop-branding-*.apk' -print -quit)"
+          mkdir -p artifacts
+          find "$SDK_DIR/bin/packages" -type f -name 'cowboy-bebop-branding-*.apk' -exec cp {} artifacts/ \;
+          test -n "$(find artifacts -type f -name 'cowboy-bebop-branding-*.apk' -print -quit)"
       - uses: actions/upload-artifact@v4
         with:
           name: cowboy-bebop-branding-${{ env.OPENWRT_VERSION }}-x86-64
-          path: artifacts-x86_64/*.apk
+          path: artifacts/*.apk
 
   build-kt708:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'kt708' || inputs.target == 'both'
+    if: inputs.target == 'kt708' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -112,23 +108,35 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test "$SHA" = "$KT708_SDK_SHA256"
+          if [ -f "$KT708_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"; fi
           [ -f "$KT708_SDK_FILE" ] || wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$KT708_SDK_FILE"
           echo "SDK_DIR=$PWD/${KT708_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-      - name: Verify SDK and package
+      - name: Verify SDK and prepare packages
         run: |
           set -eu
           cd "$SDK_DIR"
           make defconfig
           grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
           grep -q "^CONFIG_TARGET_ARCH_PACKAGES=\"${KT708_ARCH}\"$" .config
+          ./scripts/feeds update packages
+          test -f feeds/packages/net/sing-box/Makefile
+          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-branding" package/cowboy-bebop-branding
+          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
+      - name: Verify package metadata
+        run: |
+          set -eu
+          cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=cowboy-bebop-branding$' package/cowboy-bebop-branding/Makefile
+          grep -q '^DEPENDS:=+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
           test -x package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
           test -x package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
       - name: Build package
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           set -eu
           cd "$SDK_DIR"
