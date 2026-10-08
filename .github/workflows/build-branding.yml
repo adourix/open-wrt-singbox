@@ -62,9 +62,9 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=cowboy-bebop-branding$' package/cowboy-bebop-branding/Makefile
-          grep -q '^DEPENDS:=+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
-          test -x package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
-          test -x package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
+          grep -Eq '^[[:space:]]*DEPENDS:=\+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
+          test -f package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
+          test -f package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
       - name: Build package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -72,13 +72,19 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-branding-x86_64.log"
-          make package/cowboy-bebop-branding/compile V=s > "$LOG" 2>&1 || { tail -n 120 "$LOG"; exit 1; }
+          if ! make package/cowboy-bebop-branding/compile V=s > "$LOG" 2>&1; then
+            echo "::group::Context before the first make failure"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
+            echo "::endgroup::"
+            exit 1
+          fi
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: branding-build-log-x86_64
           path: build-branding-x86_64.log
+          if-no-files-found: ignore
       - name: Collect package
         run: |
           set -eu
@@ -89,6 +95,7 @@ jobs:
         with:
           name: cowboy-bebop-branding-${{ env.OPENWRT_VERSION }}-x86-64
           path: artifacts/*.apk
+          if-no-files-found: error
 
   build-kt708:
     if: inputs.target == 'kt708' || inputs.target == 'both'
@@ -133,9 +140,9 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=cowboy-bebop-branding$' package/cowboy-bebop-branding/Makefile
-          grep -q '^DEPENDS:=+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
-          test -x package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
-          test -x package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
+          grep -Eq '^[[:space:]]*DEPENDS:=\+cowboy-bebop-manager$' package/cowboy-bebop-branding/Makefile
+          test -f package/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh
+          test -f package/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding
       - name: Build package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -143,13 +150,19 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-branding-kt708.log"
-          make package/cowboy-bebop-branding/compile V=s > "$LOG" 2>&1 || { tail -n 120 "$LOG"; exit 1; }
+          if ! make package/cowboy-bebop-branding/compile V=s > "$LOG" 2>&1; then
+            echo "::group::Context before the first make failure"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
+            echo "::endgroup::"
+            exit 1
+          fi
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: branding-build-log-kt708
           path: build-branding-kt708.log
+          if-no-files-found: ignore
       - name: Collect package
         run: |
           set -eu
@@ -160,3 +173,4 @@ jobs:
         with:
           name: cowboy-bebop-branding-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-${{ env.KT708_ARCH }}
           path: artifacts-kt708/*.apk
+          if-no-files-found: error
