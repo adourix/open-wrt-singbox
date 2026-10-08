@@ -8,8 +8,14 @@ if [ "$(uci -q get system.@system[0].hostname 2>/dev/null)" = "OpenWrt" ] || \
 fi
 
 # Only change descriptive fields; keep DISTRIB_ID, VERSION_ID and target IDs intact.
+_cb_version=''
 if [ -f /etc/openwrt_release ]; then
-	sed -i 's/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION="Cowboy Bebop Manager (based on OpenWrt)"/' /etc/openwrt_release
+	_cb_version="$(sed -n 's/^DISTRIB_RELEASE=["'"']\{0,1\}\([^"'"']*\)["'"']\{0,1\}$/\1/p' /etc/openwrt_release 2>/dev/null)"
+	if [ -n "$_cb_version" ]; then
+		sed -i "s/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION=\"Cowboy Bebop Manager (based on OpenWrt $_cb_version)\"/" /etc/openwrt_release
+	else
+		sed -i 's/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION="Cowboy Bebop Manager (based on OpenWrt)"/' /etc/openwrt_release
+	fi
 fi
 
 if [ -f /etc/os-release ]; then
@@ -28,4 +34,5 @@ if [ -f /etc/os-release ]; then
 	fi
 fi
 
+unset _cb_version
 exit 0
