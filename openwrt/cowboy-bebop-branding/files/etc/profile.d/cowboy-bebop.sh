@@ -1,6 +1,7 @@
 #!/bin/sh
 # Cowboy Bebop branding; only print on interactive shells.
 [ -n "${COWBOY_BEBOP_NO_BRAND:-}" ] && return 0
+[ -t 0 ] || return 0
 [ -t 1 ] || return 0
 case "${-}" in *i*) ;; *) return 0 ;; esac
 [ -r /etc/config/cowboy-bebop ] || return 0
