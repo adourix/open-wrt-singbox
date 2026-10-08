@@ -1,0 +1,6 @@
+config cowboy_bebop 'main'
+    option enabled '1'
+    option auto_start '1'
+    option proxy_url ''
+    option ipv6_policy 'block'
+    option allow_insecure '1'
