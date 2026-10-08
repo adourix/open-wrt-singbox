@@ -2,8 +2,8 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-UI="$ROOT/openwrt/luci-app-cowboy-bebop/htdocs/luci-static/resources/view/singbox/overview.js"
-RPC="$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox"
+UI="$ROOT/openwrt/luci-app-cowboy-bebop/htdocs/luci-static/resources/view/cowboy-bebop/overview.js"
+RPC="$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop"
 ACL="$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/share/rpcd/acl.d/luci-app-cowboy-bebop.json"
 
 # The UI must expose explicit Start/Stop actions and never rely on a toggle.
