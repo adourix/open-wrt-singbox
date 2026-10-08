@@ -79,6 +79,7 @@ jobs:
           set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" "$SDK_DIR/package/cowboy-bebop-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" "$SDK_DIR/package/luci-app-cowboy-bebop"
+          cp "$GITHUB_WORKSPACE/core/service/manager.sh" "$SDK_DIR/package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"
       - name: Configure package metadata
         run: |
           set -eu
@@ -90,6 +91,8 @@ jobs:
           grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
           grep -q 'Package/cowboy-bebop-manager' package/cowboy-bebop-manager/Makefile
           grep -q 'DEPENDS:=+luci-base +rpcd +cowboy-bebop-manager' package/luci-app-cowboy-bebop/Makefile
+          grep -q 'keeping runtime active' package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
+          grep -q 'ensure_backup' package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Build packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -172,6 +175,7 @@ jobs:
           set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" "$SDK_DIR/package/cowboy-bebop-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" "$SDK_DIR/package/luci-app-cowboy-bebop"
+          cp "$GITHUB_WORKSPACE/core/service/manager.sh" "$SDK_DIR/package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"
       - name: Configure package metadata
         run: |
           set -eu
@@ -183,6 +187,8 @@ jobs:
           grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
           grep -q 'Package/cowboy-bebop-manager' package/cowboy-bebop-manager/Makefile
           grep -q 'DEPENDS:=+luci-base +rpcd +cowboy-bebop-manager' package/luci-app-cowboy-bebop/Makefile
+          grep -q 'keeping runtime active' package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
+          grep -q 'ensure_backup' package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Build KT-708 packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
