@@ -1,8 +1,0 @@
-#!/bin/sh
-uci -q set cowboy-bebop.main.enabled='0'
-uci -q set cowboy-bebop.main.auto_start='1'
-uci -q set cowboy-bebop.main.allow_insecure='1'
-uci -q set cowboy-bebop.main.ipv6_policy='block'
-uci -q delete cowboy-bebop.main.proxy_url 2>/dev/null || true
-uci -q commit cowboy-bebop
-exit 0
