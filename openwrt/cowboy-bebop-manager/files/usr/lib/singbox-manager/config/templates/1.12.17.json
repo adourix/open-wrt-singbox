@@ -1,0 +1,7 @@
+{
+  "engine": "sing-box",
+  "version": "1.12.17",
+  "generator": "core/config/generator.sh",
+  "source_of_truth": "generator",
+  "note": "This file is a version marker only. Runtime configuration is generated exclusively by generator.sh."
+}
