@@ -22,7 +22,6 @@ endef
 
 define Package/cowboy-bebop-manager/conffiles
 /etc/config/cowboy-bebop
-/etc/cowboy-bebop/config.json
 endef
 
 define Build/Compile
@@ -59,12 +58,21 @@ define Package/cowboy-bebop-manager/install
 		-e 's/logger -t singbox/logger -t cowboy-bebop/g' \
 		$(1)/usr/lib/cowboy-bebop/service/manager.sh
 
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) ./files/etc/config/cowboy-bebop $(1)/etc/config/cowboy-bebop
+	$(INSTALL_DATA) ./files/etc/config/cowboy-bebop $(1)/etc/config/cowboy-bebop
 	$(INSTALL_DIR) $(1)/etc/cowboy-bebop
 
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/etc/init.d/cowboy-bebop $(1)/etc/init.d/cowboy-bebop
+	$(INSTALL_BIN) ./files/etc/init.d/singbox $(1)/etc/init.d/cowboy-bebop
+	sed -i \
+		-e 's#/etc/singbox#/etc/cowboy-bebop#g' \
+		-e 's#/etc/config/singbox#/etc/config/cowboy-bebop#g' \
+		-e 's#/usr/lib/singbox-manager#/usr/lib/cowboy-bebop#g' \
+		-e 's#config_load singbox#config_load cowboy-bebop#g' \
+		-e 's#procd_add_reload_trigger singbox#procd_add_reload_trigger cowboy-bebop#g' \
+		-e 's#uci set singbox\.main#uci set cowboy-bebop.main#g' \
+		-e 's#uci commit singbox#uci commit cowboy-bebop#g' \
+		-e 's#logger -t singbox#logger -t cowboy-bebop#g' \
+		$(1)/etc/init.d/cowboy-bebop
 endef
 
 $(eval $(call BuildPackage,cowboy-bebop-manager))
