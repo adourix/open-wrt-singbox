@@ -1,34 +1,35 @@
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=singbox-manager
-PKG_RELEASE:=11
+PKG_NAME:=cowboy-bebop-manager
+PKG_RELEASE:=12
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
+REPLACES:=singbox-manager
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/singbox-manager
+define Package/cowboy-bebop-manager
   SECTION:=net
   CATEGORY:=Network
-  TITLE:=Lightweight sing-box manager
+  TITLE:=Cowboy Bebop Manager for sing-box
   DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag
 endef
 
-define Package/singbox-manager/description
-Core CLI, protocol parsers, configuration generator, service integration,
-TUN routing safety, DNS policy, validation and recovery for sing-box.
+define Package/cowboy-bebop-manager/description
+Cowboy Bebop Manager: lightweight sing-box manager with protocol parsing,
+configuration generation, TUN routing safety, DNS policy, validation and recovery.
 endef
 
-define Package/singbox-manager/conffiles
+define Package/cowboy-bebop-manager/conffiles
 /etc/config/singbox
 endef
 
 define Build/Compile
 endef
 
-define Package/singbox-manager/install
+define Package/cowboy-bebop-manager/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) ./files/usr/bin/singbox-manager $(1)/usr/bin/singbox-manager
+	$(INSTALL_BIN) ./files/usr/bin/singbox-manager $(1)/usr/bin/cowboy-bebop-manager
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/protocol/vmess
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/protocol/vless
 	$(INSTALL_DIR) $(1)/usr/lib/singbox-manager/config/templates
@@ -47,7 +48,7 @@ define Package/singbox-manager/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/singbox $(1)/etc/config/singbox
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/etc/init.d/singbox $(1)/etc/init.d/singbox
+	$(INSTALL_BIN) ./files/etc/init.d/singbox $(1)/etc/init.d/cowboy-bebop
 endef
 
-$(eval $(call BuildPackage,singbox-manager))
+$(eval $(call BuildPackage,cowboy-bebop-manager))
