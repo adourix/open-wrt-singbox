@@ -61,9 +61,15 @@ recover_pending_config() {
     return 0
 }
 
+# Pending confirmation is a boot-recovery concern, not a normal start/restart concern.
+# manager.sh deliberately restarts the service while a new configuration is pending.
+boot() {
+    recover_pending_config || return 1
+    start "$@"
+}
+
 start_service() {
     [ -x "$PROG" ] || { log_error 'sing-box binary is missing'; return 1; }
-    recover_pending_config || return 1
     config_load cowboy-bebop 2>/dev/null || true
     config_get_bool enabled main enabled 1
     [ "$enabled" -eq 1 ] || return 0
