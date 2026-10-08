@@ -4,7 +4,7 @@
 
 MANAGER=/usr/bin/cowboy-bebop-manager
 SERVICE=/etc/init.d/cowboy-bebop
-CONFIG=/etc/singbox/config.json
+CONFIG=/etc/cowboy-bebop/config.json
 
 json_error() {
     jq -cn --arg error "$1" '{ok:false,error:$error}'
@@ -15,12 +15,12 @@ short_error() {
 }
 
 status_json() {
-    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=true; allow_insecure=true
+    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false; allow_insecure=true
     configured=false; protocol=; server=; server_port=; transport=; tls=false; state=STOPPED
 
-    [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ] && enabled=true
-    [ -n "$(uci -q get singbox.main.proxy_url 2>/dev/null)" ] && configured=true
-    [ -f /etc/singbox/config.pending ] || [ -f /etc/singbox/state.pending.json ] && pending=true
+    [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ] && enabled=true
+    [ -n "$(uci -q get cowboy-bebop.main.proxy_url 2>/dev/null)" ] && configured=true
+    [ -f /etc/cowboy-bebop/config.pending ] || [ -f /etc/cowboy-bebop/state.pending.json ] && pending=true
     "$SERVICE" enabled >/dev/null 2>&1 && auto_start=true
 
     if command -v sing-box >/dev/null 2>&1 && [ -f "$CONFIG" ] && sing-box check -c "$CONFIG" >/dev/null 2>&1; then
@@ -65,9 +65,9 @@ status_json() {
 preview_profile() {
     proxy_url=$1
     [ -n "$proxy_url" ] || return 1
-    . /usr/lib/singbox-manager/protocol/detector.sh || return 1
-    . /usr/lib/singbox-manager/protocol/vmess/parser.sh || return 1
-    . /usr/lib/singbox-manager/protocol/vless/parser.sh || return 1
+    . /usr/lib/cowboy-bebop/protocol/detector.sh || return 1
+    . /usr/lib/cowboy-bebop/protocol/vmess/parser.sh || return 1
+    . /usr/lib/cowboy-bebop/protocol/vless/parser.sh || return 1
     protocol=$(detect_protocol "$proxy_url") || return 1
     case "$protocol" in
         vmess) profile=$(vmess_parse "$proxy_url") || return 1 ;;
