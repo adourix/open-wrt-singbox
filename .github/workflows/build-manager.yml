@@ -51,6 +51,7 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages
+          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
       - name: Copy package
         run: |
@@ -123,6 +124,7 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           ./scripts/feeds update packages
+          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
