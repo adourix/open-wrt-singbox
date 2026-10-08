@@ -12,6 +12,8 @@ INIT=${INIT:-/etc/init.d/singbox}
 SINGBOX_BIN=${SINGBOX_BIN:-sing-box}
 FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
 ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
+CONNECTIVITY_TIMEOUT=${CONNECTIVITY_TIMEOUT:-3}
+CONNECTIVITY_TRIES=${CONNECTIVITY_TRIES:-2}
 
 load_core() {
     . "$MANAGER_LIB/protocol/detector.sh" || return 1
@@ -80,10 +82,14 @@ routing_exists() { command -v ip >/dev/null 2>&1 && ip route show table all 2>/d
 process_running() { command -v pidof >/dev/null 2>&1 && pidof "$SINGBOX_BIN" >/dev/null 2>&1; }
 connectivity_test() {
     command -v uclient-fetch >/dev/null 2>&1 || return 1
-    tries=0
-    while [ "$tries" -lt 3 ]; do
-        if uclient-fetch -q -T 8 -O /dev/null https://api.ipify.org >/dev/null 2>&1; then return 0; fi
-        tries=$((tries + 1)); sleep 1
+    timeout=$CONNECTIVITY_TIMEOUT
+    tries=$CONNECTIVITY_TRIES
+    case "$timeout" in ''|*[!0-9]*) timeout=3 ;; esac
+    case "$tries" in ''|*[!0-9]*|0) tries=2 ;; esac
+    while [ "$tries" -gt 0 ]; do
+        if uclient-fetch -q -T "$timeout" -O /dev/null https://api.ipify.org >/dev/null 2>&1; then return 0; fi
+        tries=$((tries - 1))
+        [ "$tries" -gt 0 ] && sleep 1
     done
     return 1
 }

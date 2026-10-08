@@ -23,6 +23,7 @@ return view.extend({
 	render: function(data) {
 		var status = data[0] || {};
 		var logs = data[1] || { lines: [] };
+		var busy = false;
 		var page = E('div', { class: 'singbox-page' });
 		var url = E('textarea', { class: 'cbi-input-text', rows: 3, spellcheck: false, autocomplete: 'off', placeholder: status.configured ? _('Saved - hidden') : _('vmess:// or vless://') });
 		var auto = E('input', { type: 'checkbox', checked: !!status.auto_start });
@@ -42,6 +43,17 @@ return view.extend({
 
 		function errorText(result, fallback) {
 			return result && result.error ? result.error : fallback;
+		}
+
+		function setBusy(value) {
+			busy = value;
+			[preview, apply, startButton, stopButton].forEach(function(buttonNode) {
+				if (buttonNode) buttonNode.disabled = value;
+			});
+			if (confirmBox) confirmBox.style.opacity = value ? '0.5' : '1';
+			url.disabled = value;
+			auto.disabled = value;
+			allowInsecure.disabled = value;
 		}
 
 		function refresh() {
@@ -76,6 +88,8 @@ return view.extend({
 			confirmBox.innerHTML = '';
 			if (status.pending) {
 				confirmBox.appendChild(button('Confirm', 'cbi-button-action', function() {
+					if (busy) return;
+					setBusy(true);
 					return callConfirm().then(function(result) {
 						if (!result || result.ok !== true) throw new Error(errorText(result, _('Confirmation failed.')));
 						ui.addNotification(null, E('p', [_('Configuration confirmed.')]), 'info');
@@ -83,20 +97,25 @@ return view.extend({
 					}).catch(function(err) {
 						ui.addNotification(null, E('p', [_(err.message || _('Confirmation failed.'))]), 'error');
 						return refresh();
+					}).then(function(result) {
+						setBusy(false);
+						return result;
 					});
 				}));
 			}
-			startButton.disabled = !!status.running || !status.configured || !!status.pending;
-			stopButton.disabled = !status.running;
-			apply.disabled = !!status.pending;
+			startButton.disabled = busy || !!status.running || !status.configured || !!status.pending;
+			stopButton.disabled = busy || !status.running;
+			apply.disabled = busy || !!status.pending;
 		}
 
 		var preview = button('Detect / Preview', 'cbi-button-action', function() {
+			if (busy) return;
 			var value = url.value.trim();
 			if (!value) {
 				ui.addNotification(null, E('p', [_('Paste a VMess or VLESS URL first.')]), 'error');
 				return;
 			}
+			setBusy(true);
 			return callPreview({ proxy_url: value, allow_insecure: !!allowInsecure.checked }).then(function(result) {
 				if (!result || result.ok === false) throw new Error(errorText(result, _('Invalid or unsupported proxy URL.')));
 				previewBox.innerHTML = '';
@@ -106,15 +125,20 @@ return view.extend({
 			}).catch(function(err) {
 				previewBox.innerHTML = '';
 				previewBox.appendChild(E('p', {}, [_(err.message || _('Invalid or unsupported proxy URL.'))]));
+			}).then(function(result) {
+				setBusy(false);
+				return result;
 			});
 		});
 
 		var apply = button('Save & Apply', 'cbi-button-apply', function() {
+			if (busy) return;
 			var value = url.value.trim();
 			if (!value) {
 				ui.addNotification(null, E('p', [_('Paste a new VMess or VLESS URL to apply changes.')]), 'error');
 				return;
 			}
+			setBusy(true);
 			return callApply({ proxy_url: value, auto_start: !!auto.checked, allow_insecure: !!allowInsecure.checked }).then(function(result) {
 				if (!result || result.ok !== true) throw new Error(errorText(result, _('Failed to apply configuration.')));
 				url.value = '';
@@ -124,26 +148,39 @@ return view.extend({
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', [err.message || _('Failed to apply configuration.')]), 'error');
 				return refresh();
+			}).then(function(result) {
+				setBusy(false);
+				return result;
 			});
 		});
 
 		var startButton = button('Start', 'cbi-button-action', function() {
+			if (busy) return;
+			setBusy(true);
 			return callStart().then(function(result) {
 				if (!result || result.ok !== true) throw new Error(errorText(result, _('Failed to start sing-box.')));
 				return refresh();
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', [_(err.message || _('Failed to start sing-box.'))]), 'error');
 				return refresh();
+			}).then(function(result) {
+				setBusy(false);
+				return result;
 			});
 		});
 
 		var stopButton = button('Stop', 'cbi-button-negative', function() {
+			if (busy) return;
+			setBusy(true);
 			return callStop().then(function(result) {
 				if (!result || result.ok !== true) throw new Error(errorText(result, _('Failed to stop sing-box.')));
 				return refresh();
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', [_(err.message || _('Failed to stop sing-box.'))]), 'error');
 				return refresh();
+			}).then(function(result) {
+				setBusy(false);
+				return result;
 			});
 		});
 

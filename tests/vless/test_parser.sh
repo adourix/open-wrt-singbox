@@ -16,13 +16,14 @@ TMPDIR=${TMPDIR:-/tmp}
 umask 077
 uuid=550e8400-e29b-41d4-a716-446655440000
 
-profile=$(vless_parse "vless://$uuid@example.com:443?type=ws&security=tls&sni=example.com&path=%2Fws&host=example.com&encryption=none#My%20Server")
+profile=$(vless_parse "vless://$uuid@example.com:443?type=ws&security=tls&sni=example.com&path=%2F&fp=ios&alpn=http%2F1.1&allowInsecure=1&encryption=none#My%20Server")
 printf '%s\n' "$profile" | jq -e '
  .schema_version == 1 and .protocol == "vless"
  and .server == "example.com" and .server_port == 443 and .uuid == "550e8400-e29b-41d4-a716-446655440000"
- and .tls.enabled == true and .tls.server_name == "example.com"
- and .transport.type == "ws" and .transport.path == "/ws"
- and .transport.headers.Host == "example.com" and .metadata.name == "My Server"
+ and .tls.enabled == true and .tls.server_name == "example.com" and .tls.insecure == true
+ and .tls.utls.enabled == true and .tls.utls.fingerprint == "ios" and .tls.alpn[0] == "http/1.1"
+ and .transport.type == "ws" and .transport.path == "/"
+ and .transport.headers == {} and .metadata.name == "My Server"
 ' >/dev/null || fail "TLS WebSocket profile"
 
 vless_parse "vless://$uuid@[2001:db8::1]:443?type=tcp&security=tls&sni=example.com" |
@@ -37,6 +38,9 @@ vless_parse "vless://$uuid@example.com:443?security=reality&sni=example.com&fp=c
  jq -e '.tls.reality.enabled == true and .tls.reality.public_key == "PUBLIC" and .tls.utls.fingerprint == "chrome"' >/dev/null ||
  fail "Reality profile"
 
+vless_parse "vless://$uuid@example.com:443?type=ws&security=tls&allowInsecure=0" |
+ jq -e '.tls.insecure == false' >/dev/null || fail "allowInsecure=0"
+
 expect_error "vless://bad@example.com:443" "Invalid VLESS UUID"
 expect_error "vless://$uuid@example.com" "Invalid VLESS port"
 expect_error "vless://$uuid@example.com:70000" "Invalid VLESS port"
@@ -48,6 +52,7 @@ expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com" "M
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=PUBLIC&sid=0123456789abcdef0" "Invalid Reality short ID"
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=bad%2Akey&sid=0123" "Invalid Reality public key"
 expect_error "vless://$uuid@example.com:443?insecure=1" "Insecure TLS requires explicit opt-in"
+expect_error "vless://$uuid@example.com:443?security=none&insecure=1" "Insecure TLS requires TLS or Reality"
 
 VLESS_ALLOW_INSECURE=1 vless_parse "vless://$uuid@example.com:443?security=tls&insecure=1" |
  jq -e '.tls.insecure == true' >/dev/null || fail "explicit insecure opt-in"
