@@ -13,12 +13,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq shellcheck nftables
       - name: Shell syntax
         run: |
-          find core tests openwrt/cowboy-bebop/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
-          sh -n openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox
+          find core tests openwrt/cowboy-bebop-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          sh -n openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop
       - name: Shellcheck
         run: |
-          find core tests openwrt/cowboy-bebop/files -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
-          shellcheck -S error openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox
+          find core tests openwrt/cowboy-bebop-manager/files -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error
+          shellcheck -S error openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop
       - name: Test protocol detector
         run: sh ./tests/protocol/test_detector.sh
       - name: Test VMess parser
@@ -47,14 +47,14 @@ jobs:
       - name: Check source mirrors
         run: |
           for pair in \
-            "core/protocol/detector.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/detector.sh" \
-            "core/protocol/vmess/parser.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/vmess/parser.sh" \
-            "core/protocol/vless/parser.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/vless/parser.sh" \
-            "core/config/generator.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/generator.sh" \
-            "core/config/validator.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/validator.sh" \
-            "core/config/version.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/version.sh" \
-            "core/network/firewall.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/network/firewall.sh" \
-            "core/service/manager.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/service/manager.sh"; do
+            "core/protocol/detector.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/detector.sh" \
+            "core/protocol/vmess/parser.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh" \
+            "core/protocol/vless/parser.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh" \
+            "core/config/generator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/generator.sh" \
+            "core/config/validator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/validator.sh" \
+            "core/config/version.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/version.sh" \
+            "core/network/firewall.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/network/firewall.sh" \
+            "core/service/manager.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"; do
             core_file=${pair%%|*}
             packaged_file=${pair#*|}
             cmp -s "$core_file" "$packaged_file"
