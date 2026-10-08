@@ -13,8 +13,8 @@ for file in \
     "$ROOT/core/network/firewall.sh"; do
     sh -n "$file"
 done
-sh -n "$ROOT/openwrt/singbox-manager/files/etc/init.d/singbox"
-sh -n "$ROOT/openwrt/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox"
+sh -n "$ROOT/openwrt/cowboy-bebop/files/etc/init.d/cowboy-bebop"
+sh -n "$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox"
 
 grep -F 'uclient-fetch' "$ROOT/core/service/manager.sh" >/dev/null
 grep -F 'VLESS_ALLOW_INSECURE' "$ROOT/core/service/manager.sh" >/dev/null
@@ -28,14 +28,14 @@ if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uu
 fi
 
 for pair in \
-    "core/protocol/detector.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/detector.sh" \
-    "core/protocol/vmess/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh" \
-    "core/protocol/vless/parser.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh" \
-    "core/config/generator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/generator.sh" \
-    "core/config/validator.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/validator.sh" \
-    "core/config/version.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/config/version.sh" \
-    "core/network/firewall.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/network/firewall.sh" \
-    "core/service/manager.sh|openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh"; do
+    "core/protocol/detector.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/detector.sh" \
+    "core/protocol/vmess/parser.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/vmess/parser.sh" \
+    "core/protocol/vless/parser.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/protocol/vless/parser.sh" \
+    "core/config/generator.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/generator.sh" \
+    "core/config/validator.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/validator.sh" \
+    "core/config/version.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/config/version.sh" \
+    "core/network/firewall.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/network/firewall.sh" \
+    "core/service/manager.sh|openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/service/manager.sh"; do
     core_file=${pair%%|*}
     packaged_file=${pair#*|}
     cmp -s "$ROOT/$core_file" "$ROOT/$packaged_file" || {

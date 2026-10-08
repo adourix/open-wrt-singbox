@@ -1,14 +1,14 @@
 #!/bin/sh
 # shellcheck disable=SC1091
-MANAGER_LIB=${MANAGER_LIB:-/usr/lib/singbox-manager}
-CONFIG_DIR=${CONFIG_DIR:-/etc/singbox}
+MANAGER_LIB=${MANAGER_LIB:-/usr/lib/cowboy-bebop}
+CONFIG_DIR=${CONFIG_DIR:-/etc/cowboy-bebop}
 CONFIG=${CONFIG:-$CONFIG_DIR/config.json}
 CANDIDATE=${CANDIDATE:-$CONFIG_DIR/config.json.new}
 BACKUP=${BACKUP:-$CONFIG_DIR/config.json.bak}
 PENDING=${PENDING:-$CONFIG_DIR/config.pending}
 PENDING_STATE=${PENDING_STATE:-$CONFIG_DIR/state.pending.json}
-ROLLBACK_PID=${ROLLBACK_PID:-/var/run/singbox-manager-rollback.pid}
-INIT=${INIT:-/etc/init.d/singbox}
+ROLLBACK_PID=${ROLLBACK_PID:-/var/run/cowboy-bebop-rollback.pid}
+INIT=${INIT:-/etc/init.d/cowboy-bebop}
 SINGBOX_BIN=${SINGBOX_BIN:-sing-box}
 FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
 ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
@@ -24,37 +24,37 @@ load_core() {
     . "$MANAGER_LIB/config/version.sh" || return 1
 }
 get_proxy_url() {
-    if [ "${SINGBOX_PROXY_URL+x}" = x ]; then printf '%s' "$SINGBOX_PROXY_URL"; else uci -q get singbox.main.proxy_url 2>/dev/null; fi
+    if [ "${SINGBOX_PROXY_URL+x}" = x ]; then printf '%s' "$SINGBOX_PROXY_URL"; else uci -q get cowboy-bebop.main.proxy_url 2>/dev/null; fi
 }
 get_allow_insecure() {
     if [ "${SINGBOX_ALLOW_INSECURE+x}" = x ]; then
         case "$SINGBOX_ALLOW_INSECURE" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
         return 0
     fi
-    case "$(uci -q get singbox.main.allow_insecure 2>/dev/null)" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
+    case "$(uci -q get cowboy-bebop.main.allow_insecure 2>/dev/null)" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
 }
 get_auto_start() {
     if [ "${SINGBOX_AUTO_START+x}" = x ]; then
         case "$SINGBOX_AUTO_START" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
     else
-        case "$(uci -q get singbox.main.auto_start 2>/dev/null)" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
+        case "$(uci -q get cowboy-bebop.main.auto_start 2>/dev/null)" in 1|yes|true) printf '%s\n' 1 ;; *) printf '%s\n' 0 ;; esac
     fi
 }
-set_enabled() { uci set singbox.main.enabled="$1" && uci commit singbox; chmod 600 /etc/config/singbox 2>/dev/null || true; }
+set_enabled() { uci set cowboy-bebop.main.enabled="$1" && uci commit singbox; chmod 600 /etc/config/cowboy-bebop 2>/dev/null || true; }
 sync_autostart() { case "$(get_auto_start)" in 1) "$INIT" enable ;; *) "$INIT" disable ;; esac; }
 persist_desired_state() {
-    uci set singbox.main.proxy_url="$1" || return 1
-    uci set singbox.main.allow_insecure="$2" || return 1
-    uci set singbox.main.auto_start="$3" || return 1
-    uci set singbox.main.enabled="$4" || return 1
+    uci set cowboy-bebop.main.proxy_url="$1" || return 1
+    uci set cowboy-bebop.main.allow_insecure="$2" || return 1
+    uci set cowboy-bebop.main.auto_start="$3" || return 1
+    uci set cowboy-bebop.main.enabled="$4" || return 1
     uci commit singbox || return 1
-    chmod 600 /etc/config/singbox 2>/dev/null || true
+    chmod 600 /etc/config/cowboy-bebop 2>/dev/null || true
 }
 capture_previous_state() {
-    PREVIOUS_PROXY_URL=$(uci -q get singbox.main.proxy_url 2>/dev/null || true)
-    PREVIOUS_ALLOW_INSECURE=$(uci -q get singbox.main.allow_insecure 2>/dev/null || true)
-    PREVIOUS_AUTO_START=$(uci -q get singbox.main.auto_start 2>/dev/null || true)
-    PREVIOUS_ENABLED=$(uci -q get singbox.main.enabled 2>/dev/null || true)
+    PREVIOUS_PROXY_URL=$(uci -q get cowboy-bebop.main.proxy_url 2>/dev/null || true)
+    PREVIOUS_ALLOW_INSECURE=$(uci -q get cowboy-bebop.main.allow_insecure 2>/dev/null || true)
+    PREVIOUS_AUTO_START=$(uci -q get cowboy-bebop.main.auto_start 2>/dev/null || true)
+    PREVIOUS_ENABLED=$(uci -q get cowboy-bebop.main.enabled 2>/dev/null || true)
     [ "$PREVIOUS_ENABLED" = "1" ] || PREVIOUS_ENABLED=0
     case "$PREVIOUS_AUTO_START" in 1|yes|true) PREVIOUS_AUTO_START=1 ;; *) PREVIOUS_AUTO_START=0 ;; esac
 }
@@ -146,7 +146,7 @@ schedule_rollback() {
 rollback_pending() { load_core || return 1; cancel_rollback_timer; restore_and_recover; }
 validate() { if config_valid; then printf '%s\n' 'Configuration: valid'; return 0; fi; printf '%s\n' 'Configuration: invalid'; return 1; }
 status() {
-    if process_running; then printf '%s\n' 'State: RUNNING'; elif [ "$(uci -q get singbox.main.enabled 2>/dev/null)" = "1" ]; then printf '%s\n' 'State: ERROR'; else printf '%s\n' 'State: STOPPED'; fi
+    if process_running; then printf '%s\n' 'State: RUNNING'; elif [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ]; then printf '%s\n' 'State: ERROR'; else printf '%s\n' 'State: STOPPED'; fi
     if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
     if tun_exists; then printf '%s\n' 'TUN: tun0'; else printf '%s\n' 'TUN: absent'; fi
     if routing_exists; then printf '%s\n' 'Routing: OK'; else printf '%s\n' 'Routing: absent'; fi
@@ -166,7 +166,7 @@ start() {
     [ ! -f "$PENDING" ] && [ ! -f "$PENDING_STATE" ] || { printf '%s\n' 'Configuration confirmation is pending' >&2; return 1; }
     config_valid || { printf '%s\n' 'Configuration is invalid or missing' >&2; return 1; }
     if process_running && tun_exists && routing_exists; then return 0; fi
-    previous_enabled=$(uci -q get singbox.main.enabled 2>/dev/null || true); [ "$previous_enabled" = "1" ] || previous_enabled=0
+    previous_enabled=$(uci -q get cowboy-bebop.main.enabled 2>/dev/null || true); [ "$previous_enabled" = "1" ] || previous_enabled=0
     set_enabled 1 || return 1; sync_autostart || { set_enabled "$previous_enabled" >/dev/null 2>&1 || true; return 1; }
     if ! "$INIT" start >/dev/null 2>&1; then set_enabled "$previous_enabled" >/dev/null 2>&1 || true; return 1; fi
     if ! verify_runtime; then printf '%s\n' 'Runtime verification failed' >&2; stop_runtime; set_enabled "$previous_enabled" >/dev/null 2>&1 || true; return 1; fi
@@ -218,5 +218,5 @@ recovery() {
 }
 case "${1:-}" in
     status) status ;; validate) validate ;; health) health ;; start) start ;; stop) stop ;; restart) restart ;; enable) manager_enable ;; disable) manager_disable ;; apply) apply ;; confirm) confirm ;; recovery) recovery ;;
-    *) printf '%s\n' 'Usage: singbox-manager {status|validate|health|start|stop|restart|enable|disable|apply|confirm|recovery}' >&2; exit 2 ;;
+    *) printf '%s\n' 'Usage: cowboy-bebop {status|validate|health|start|stop|restart|enable|disable|apply|confirm|recovery}' >&2; exit 2 ;;
 esac

@@ -77,30 +77,30 @@ jobs:
       - name: Copy project packages
         run: |
           set -eu
-          cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
-          cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
+          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop" "$SDK_DIR/package/cowboy-bebop"
+          cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" "$SDK_DIR/package/luci-app-cowboy-bebop"
       - name: Configure Cowboy Bebop package metadata
         run: |
           set -eu
           cd "$SDK_DIR"
-          cp package/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox package/luci-app-singbox/root/usr/libexec/rpcd/luci.cowboy_bebop
+          cp package/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox package/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop
           sed -i \
-            -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
-            -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
-            -e 's/+singbox-manager/+cowboy-bebop-manager/g' \
-            -e 's/luci-app-singbox/luci-app-cowboy-bebop/g' \
+            -e 's/PKG_NAME:=luci-app-cowboy-bebop/PKG_NAME:=luci-app-cowboy-bebop/' \
+            -e 's/Package\/luci-app-cowboy-bebop/Package\/luci-app-cowboy-bebop/g' \
+            -e 's/+cowboy-bebop/+cowboy-bebop-manager/g' \
+            -e 's/luci-app-cowboy-bebop/luci-app-cowboy-bebop/g' \
             -e 's/luci\.singbox/luci.cowboy_bebop/g' \
-            package/luci-app-singbox/Makefile
-          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-singbox/Makefile
-          grep -q 'Package/cowboy-bebop-manager' package/singbox-manager/Makefile
+            package/luci-app-cowboy-bebop/Makefile
+          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
+          grep -q 'Package/cowboy-bebop-manager' package/cowboy-bebop/Makefile
       - name: Configure package metadata
         run: |
           set -eu
           cd "$SDK_DIR"
           make defconfig
-          test -f package/singbox-manager/Makefile
-          test -f package/luci-app-singbox/Makefile
-          grep -q 'DEPENDS:=+sing-box-tiny' package/singbox-manager/Makefile
+          test -f package/cowboy-bebop/Makefile
+          test -f package/luci-app-cowboy-bebop/Makefile
+          grep -q 'DEPENDS:=+sing-box-tiny' package/cowboy-bebop/Makefile
       - name: Build packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -108,7 +108,7 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build.log"
-          if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
+          if ! make package/cowboy-bebop/compile package/luci-app-cowboy-bebop/compile V=s > "$LOG" 2>&1; then
             echo "::group::Context before the first make failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 100 "$LOG"
             echo "::endgroup::"
@@ -181,29 +181,29 @@ jobs:
       - name: Copy project packages
         run: |
           set -eu
-          cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
-          cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
+          cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop" "$SDK_DIR/package/cowboy-bebop"
+          cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" "$SDK_DIR/package/luci-app-cowboy-bebop"
       - name: Configure Cowboy Bebop package metadata
         run: |
           set -eu
           cd "$SDK_DIR"
-          cp package/luci-app-singbox/root/usr/libexec/rpcd/luci.singbox package/luci-app-singbox/root/usr/libexec/rpcd/luci.cowboy_bebop
+          cp package/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.singbox package/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop
           sed -i \
-            -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
-            -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
-            -e 's/+singbox-manager/+cowboy-bebop-manager/g' \
-            -e 's/luci-app-singbox/luci-app-cowboy-bebop/g' \
+            -e 's/PKG_NAME:=luci-app-cowboy-bebop/PKG_NAME:=luci-app-cowboy-bebop/' \
+            -e 's/Package\/luci-app-cowboy-bebop/Package\/luci-app-cowboy-bebop/g' \
+            -e 's/+cowboy-bebop/+cowboy-bebop-manager/g' \
+            -e 's/luci-app-cowboy-bebop/luci-app-cowboy-bebop/g' \
             -e 's/luci\.singbox/luci.cowboy_bebop/g' \
-            package/luci-app-singbox/Makefile
-          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-singbox/Makefile
-          grep -q 'Package/cowboy-bebop-manager' package/singbox-manager/Makefile
+            package/luci-app-cowboy-bebop/Makefile
+          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
+          grep -q 'Package/cowboy-bebop-manager' package/cowboy-bebop/Makefile
       - name: Configure package metadata
         run: |
           set -eu
           cd "$SDK_DIR"
           make defconfig
-          test -f package/singbox-manager/Makefile
-          test -f package/luci-app-singbox/Makefile
+          test -f package/cowboy-bebop/Makefile
+          test -f package/luci-app-cowboy-bebop/Makefile
       - name: Build KT-708 packages
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -211,7 +211,7 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-kt708.log"
-          if ! make package/singbox-manager/compile package/luci-app-singbox/compile V=s > "$LOG" 2>&1; then
+          if ! make package/cowboy-bebop/compile package/luci-app-cowboy-bebop/compile V=s > "$LOG" 2>&1; then
             echo "::group::Context before the first make failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 100 "$LOG"
             echo "::endgroup::"

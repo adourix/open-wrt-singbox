@@ -3,8 +3,8 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 MANAGER="$ROOT/core/service/manager.sh"
-MIRROR="$ROOT/openwrt/singbox-manager/files/usr/lib/singbox-manager/service/manager.sh"
-PACKAGE="$ROOT/openwrt/singbox-manager/Makefile"
+MIRROR="$ROOT/openwrt/cowboy-bebop/files/usr/lib/cowboy-bebop/service/manager.sh"
+PACKAGE="$ROOT/openwrt/cowboy-bebop/Makefile"
 
 # Core and packaged managers must preserve the same critical runtime contract.
 for file in "$MANAGER" "$MIRROR"; do

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Validate a candidate sing-box configuration without activating it.
 
-SINGBOX_CONFIG_DIR=${SINGBOX_CONFIG_DIR:-/etc/singbox}
+SINGBOX_CONFIG_DIR=${SINGBOX_CONFIG_DIR:-/etc/cowboy-bebop}
 SINGBOX_CONFIG=${SINGBOX_CONFIG:-$SINGBOX_CONFIG_DIR/config.json}
 SINGBOX_CANDIDATE=${SINGBOX_CANDIDATE:-$SINGBOX_CONFIG_DIR/config.json.new}
 SINGBOX_BACKUP=${SINGBOX_BACKUP:-$SINGBOX_CONFIG_DIR/config.json.bak}

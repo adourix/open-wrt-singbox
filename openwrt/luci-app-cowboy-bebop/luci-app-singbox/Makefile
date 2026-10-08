@@ -41,8 +41,8 @@ define Package/luci-app-cowboy-bebop/install
 	$(INSTALL_DIR) $(1)/usr/libexec/rpcd
 	$(INSTALL_BIN) ./root/usr/libexec/rpcd/luci.singbox $(1)/usr/libexec/rpcd/luci.cowboy_bebop
 	sed -i \
-		-e 's#/etc/singbox#/etc/cowboy-bebop#g' \
-		-e 's#/usr/lib/singbox-manager#/usr/lib/cowboy-bebop#g' \
+		-e 's#/etc/cowboy-bebop#/etc/cowboy-bebop#g' \
+		-e 's#/usr/lib/cowboy-bebop#/usr/lib/cowboy-bebop#g' \
 		-e 's#singbox\.main#cowboy-bebop.main#g' \
 		$(1)/usr/libexec/rpcd/luci.cowboy_bebop
 

@@ -20,7 +20,7 @@ targets the pinned 1.13 configuration model.
 LuCI
   |
   v
-rpcd -> singbox-manager
+rpcd -> cowboy-bebop
           |
           +-- parser / normalized profile
           +-- generator
@@ -36,20 +36,20 @@ rpcd -> singbox-manager
 
 Project-specific paths:
 
-- UCI: `/etc/config/singbox`
-- Generated config: `/etc/singbox/config.json`
-- Candidate: `/etc/singbox/config.json.new`
-- Backup: `/etc/singbox/config.json.bak`
-- Pending confirmation: `/etc/singbox/config.pending`
-- Pending desired-state backup: `/etc/singbox/state.pending.json`
-- Init: `/etc/init.d/singbox`
-- Manager: `/usr/bin/singbox-manager`
-- Runtime library: `/usr/lib/singbox-manager/`
+- UCI: `/etc/config/cowboy-bebop`
+- Generated config: `/etc/cowboy-bebop/config.json`
+- Candidate: `/etc/cowboy-bebop/config.json.new`
+- Backup: `/etc/cowboy-bebop/config.json.bak`
+- Pending confirmation: `/etc/cowboy-bebop/config.pending`
+- Pending desired-state backup: `/etc/cowboy-bebop/state.pending.json`
+- Init: `/etc/init.d/cowboy-bebop`
+- Manager: `/usr/bin/cowboy-bebop`
+- Runtime library: `/usr/lib/cowboy-bebop/`
 
 ## Runtime architecture and state
 
 The UCI configuration is desired state. The running sing-box process, TUN
-interface, routing state and firewall state are actual state. `singbox-manager`
+interface, routing state and firewall state are actual state. `cowboy-bebop`
 reconciles them and never lets LuCI edit Linux networking directly.
 
 ## TUN policy
@@ -124,7 +124,7 @@ Every apply:
 Run:
 
 ```sh
-singbox-manager confirm
+cowboy-bebop confirm
 ```
 
 to commit the new configuration. If confirmation is not received, the previous
@@ -134,7 +134,7 @@ confirmation is pending also restores both before the service is started.
 Recovery is:
 
 ```sh
-singbox-manager recovery
+cowboy-bebop recovery
 ```
 
 Recovery is idempotent and removes the project-owned nftables table.

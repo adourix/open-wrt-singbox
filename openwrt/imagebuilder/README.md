@@ -5,8 +5,8 @@ Target:
 - OpenWrt 25.12.5
 - x86_64 generic EFI
 - sing-box 1.13.21 package
-- singbox-manager
-- luci-app-singbox
+- cowboy-bebop
+- luci-app-cowboy-bebop
 - jq
 - nftables/fw4
 - Tailscale
@@ -16,7 +16,7 @@ through LuCI or UCI. Add the Tailscale authentication key separately.
 
 ## Build flow
 
-1. Build `singbox-manager` and `luci-app-singbox` with the matching OpenWrt SDK.
+1. Build `cowboy-bebop` and `luci-app-cowboy-bebop` with the matching OpenWrt SDK.
 2. Place the resulting packages in an ImageBuilder package directory.
 3. Use this `files/` directory as custom files.
 4. Run the ImageBuilder with the generic x86_64 EFI profile.

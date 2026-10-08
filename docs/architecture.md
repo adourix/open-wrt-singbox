@@ -65,7 +65,7 @@ The generator is pinned to sing-box 1.13.21 and emits TUN, DNS, route and VMess/
 
 - core/service/manager.sh
 - core/network/firewall.sh
-- openwrt/singbox-manager/files/etc/init.d/singbox
+- openwrt/cowboy-bebop/files/etc/init.d/cowboy-bebop
 
 The manager owns desired state in UCI and observes actual process/TUN/routing state. OpenWrt procd owns the process lifecycle. sing-box auto_redirect owns transparent interception integration with Linux/fw4; the project-owned nft table is reserved for safety policy and IPv6 leak prevention.
 
@@ -75,15 +75,15 @@ LuCI calls a small rpcd executable backend. The backend never returns the stored
 
 ### Packaging
 
-- openwrt/singbox-manager: core runtime package
-- openwrt/luci-app-singbox: LuCI/rpcd package
+- openwrt/cowboy-bebop: core runtime package
+- openwrt/luci-app-cowboy-bebop: LuCI/rpcd package
 - openwrt/imagebuilder: x86_64 image assembly
 
 The runtime image contains no Node.js, Docker, Python or permanent application server.
 
 ## Failure model
 
-Invalid configuration is never activated. Failed restart or failed runtime verification restores the previous configuration. Successful applies enter a 60-second commit-confirm state. singbox-manager confirm commits the new configuration; timeout or a reboot before confirmation restores the backup.
+Invalid configuration is never activated. Failed restart or failed runtime verification restores the previous configuration. Successful applies enter a 60-second commit-confirm state. cowboy-bebop confirm commits the new configuration; timeout or a reboot before confirmation restores the backup.
 
 ## Tests
 
