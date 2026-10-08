@@ -28,9 +28,9 @@ if [ -f /etc/os-release ]; then
 
 	# Support contacts for interactive/system identification.
 	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
-		echo 'SUPPORT_PHONE="+20175555667 +01009823007"' >> /etc/os-release
+		echo 'SUPPORT_PHONE="+20175555667 +20 1009823007"' >> /etc/os-release
 	else
-		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +01009823007"/' /etc/os-release
+		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +20 1009823007"/' /etc/os-release
 	fi
 fi
 
