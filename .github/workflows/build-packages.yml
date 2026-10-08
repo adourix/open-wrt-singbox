@@ -80,10 +80,6 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only. Do NOT `feeds install`: installed feed packages become
-          # build dependencies, so the SDK would compile sing-box-tiny (Go) and
-          # luci-base from source (20+ minutes, then fails). They stay runtime
-          # dependencies that apk resolves on the router.
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
 
@@ -92,6 +88,21 @@ jobs:
           set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
+
+      - name: Configure Cowboy Bebop package metadata
+        run: |
+          set -eu
+          cd "$SDK_DIR"
+          sed -i \
+            -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
+            -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
+            -e 's/+singbox-manager/+cowboy-bebop-manager/g' \
+            -e 's/luci-app-singbox/luci-app-cowboy-bebop/g' \
+            -e 's/luci\.singbox/luci.cowboy_bebop/g' \
+            -e 's/Cowboy Bebop Manager LuCI/Cowboy Bebop Manager LuCI/g' \
+            package/luci-app-singbox/Makefile
+          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-singbox/Makefile
+          grep -q 'Package/cowboy-bebop-manager' package/singbox-manager/Makefile
 
       - name: Configure package metadata
         run: |
@@ -129,9 +140,9 @@ jobs:
           set -eu
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find "$SDK_DIR/bin/packages" -type f \
-            \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
+            \( -name 'cowboy-bebop-manager-*.apk' -o -name 'luci-app-cowboy-bebop-*.apk' \) \
             -exec cp {} "$GITHUB_WORKSPACE/artifacts/" \;
-          for name in singbox-manager luci-app-singbox; do
+          for name in cowboy-bebop-manager luci-app-cowboy-bebop; do
             if [ -z "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name "${name}-*.apk" -print -quit)" ]; then
               echo "::error::No ${name}-*.apk was produced"
               exit 1
@@ -199,10 +210,6 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only. Do NOT `feeds install`: installed feed packages become
-          # build dependencies, so the SDK would compile sing-box-tiny (Go) and
-          # luci-base from source (20+ minutes, then fails). They stay runtime
-          # dependencies that apk resolves on the router.
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
 
@@ -211,6 +218,20 @@ jobs:
           set -eu
           cp -a "$GITHUB_WORKSPACE/openwrt/singbox-manager" "$SDK_DIR/package/singbox-manager"
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-singbox" "$SDK_DIR/package/luci-app-singbox"
+
+      - name: Configure Cowboy Bebop package metadata
+        run: |
+          set -eu
+          cd "$SDK_DIR"
+          sed -i \
+            -e 's/PKG_NAME:=luci-app-singbox/PKG_NAME:=luci-app-cowboy-bebop/' \
+            -e 's/Package\/luci-app-singbox/Package\/luci-app-cowboy-bebop/g' \
+            -e 's/+singbox-manager/+cowboy-bebop-manager/g' \
+            -e 's/luci-app-singbox/luci-app-cowboy-bebop/g' \
+            -e 's/luci\.singbox/luci.cowboy_bebop/g' \
+            package/luci-app-singbox/Makefile
+          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-singbox/Makefile
+          grep -q 'Package/cowboy-bebop-manager' package/singbox-manager/Makefile
 
       - name: Configure package metadata
         run: |
@@ -249,9 +270,9 @@ jobs:
           OUT="$GITHUB_WORKSPACE/artifacts-kt708"
           mkdir -p "$OUT"
           find "$SDK_DIR/bin/packages" -type f \
-            \( -name 'singbox-manager-*.apk' -o -name 'luci-app-singbox-*.apk' \) \
+            \( -name 'cowboy-bebop-manager-*.apk' -o -name 'luci-app-cowboy-bebop-*.apk' \) \
             -exec cp {} "$OUT/" \;
-          for name in singbox-manager luci-app-singbox; do
+          for name in cowboy-bebop-manager luci-app-cowboy-bebop; do
             if [ -z "$(find "$OUT" -type f -name "${name}-*.apk" -print -quit)" ]; then
               echo "::error::No ${name}-*.apk was produced"
               exit 1
