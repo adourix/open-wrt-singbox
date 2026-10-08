@@ -1,19 +1,6 @@
 name: Build Cowboy Bebop LuCI Package
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "core/**"
-      - "openwrt/luci-app-cowboy-bebop/**"
-      - "openwrt/cowboy-bebop-manager/**"
-      - ".github/workflows/build-luci.yml"
-  pull_request:
-    paths:
-      - "core/**"
-      - "openwrt/luci-app-cowboy-bebop/**"
-      - "openwrt/cowboy-bebop-manager/**"
-      - ".github/workflows/build-luci.yml"
   workflow_dispatch:
     inputs:
       target:
@@ -26,10 +13,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: luci-build-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
@@ -40,7 +23,7 @@ env:
 
 jobs:
   build-x86_64:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'x86_64' || inputs.target == 'both'
+    if: inputs.target == 'x86_64' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +41,7 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$X86_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test -n "$SHA"
+          if [ -f "$X86_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c - || rm -f "$X86_SDK_FILE"; fi
           [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE" -O "$X86_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
@@ -103,7 +87,7 @@ jobs:
           path: artifacts/*.apk
 
   build-kt708:
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'kt708' || inputs.target == 'both'
+    if: inputs.target == 'kt708' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +105,7 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test "$SHA" = "$KT708_SDK_SHA256"
+          if [ -f "$KT708_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"; fi
           [ -f "$KT708_SDK_FILE" ] || wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$KT708_SDK_FILE"
