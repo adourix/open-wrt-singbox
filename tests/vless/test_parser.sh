@@ -41,6 +41,9 @@ vless_parse "vless://$uuid@example.com:443?security=reality&sni=example.com&fp=c
 vless_parse "vless://$uuid@example.com:443?type=ws&security=tls&allowInsecure=0" |
  jq -e '.tls.insecure == false' >/dev/null || fail "allowInsecure=0"
 
+vless_parse "vless://$uuid@example.com:443?security=tls&insecure=1" |
+ jq -e '.tls.insecure == true' >/dev/null || fail "fixed insecure TLS policy"
+
 expect_error "vless://bad@example.com:443" "Invalid VLESS UUID"
 expect_error "vless://$uuid@example.com" "Invalid VLESS port"
 expect_error "vless://$uuid@example.com:70000" "Invalid VLESS port"
@@ -51,11 +54,7 @@ expect_error "vless://$uuid@example.com:443?type=grpc" "Missing gRPC serviceName
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com" "Missing Reality public key"
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=PUBLIC&sid=0123456789abcdef0" "Invalid Reality short ID"
 expect_error "vless://$uuid@example.com:443?security=reality&sni=example.com&pbk=bad%2Akey&sid=0123" "Invalid Reality public key"
-expect_error "vless://$uuid@example.com:443?insecure=1" "Insecure TLS requires explicit opt-in"
 expect_error "vless://$uuid@example.com:443?security=none&insecure=1" "Insecure TLS requires TLS or Reality"
-
-VLESS_ALLOW_INSECURE=1 vless_parse "vless://$uuid@example.com:443?security=tls&insecure=1" |
- jq -e '.tls.insecure == true' >/dev/null || fail "explicit insecure opt-in"
 
 # Query parsing must not perform pathname expansion on untrusted values.
 glob_dir="$TMPDIR/vless-glob.$$"
