@@ -7,6 +7,7 @@ export CANDIDATE=/etc/cowboy-bebop/config.json.new
 export BACKUP=/etc/cowboy-bebop/config.json.bak
 export PENDING=/etc/cowboy-bebop/config.pending
 export PENDING_STATE=/etc/cowboy-bebop/state.pending.json
+export ROLLBACK_PID=/var/run/cowboy-bebop-rollback.pid
 export SINGBOX_AUTO_START=1
 export SINGBOX_ALLOW_INSECURE=1
 exec /usr/lib/cowboy-bebop/service/manager.sh "$@"
