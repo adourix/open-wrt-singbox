@@ -1,0 +1,57 @@
+/* Cowboy Bebop — LuCI action bar isolation */
+
+/*
+ * LuCI may render its generic Save/Apply/Reset footer in addition to
+ * application-owned action bars. Cowboy Bebop Manager already owns its
+ * controls, so the generic footer must not compete with it.
+ */
+body:has(.cb-manager-page) .cbi-page-actions {
+	display: none !important;
+}
+
+body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: flex-start !important;
+	gap: 8px !important;
+	flex-wrap: wrap !important;
+	width: 100% !important;
+	min-height: 0 !important;
+	margin: 12px 0 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+}
+
+/* The Manager action bar contains real buttons, not a styled button group. */
+body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .cbi-button,
+body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: auto !important;
+	min-width: 0 !important;
+	min-height: 36px !important;
+	margin: 0 !important;
+	padding: 7px 13px !important;
+	border-radius: 6px !important;
+}
+
+/* Never let a nested LuCI button-group inherit a solid primary background. */
+body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .cbi-button-group,
+body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .btn-group {
+	display: contents !important;
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+
+@media (max-width: 900px) {
+	body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions {
+		justify-content: stretch !important;
+	}
+	body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .cbi-button,
+	body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions button {
+		flex: 1 1 140px !important;
+	}
+}

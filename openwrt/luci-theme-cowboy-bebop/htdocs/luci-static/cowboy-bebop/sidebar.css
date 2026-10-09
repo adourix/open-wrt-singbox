@@ -1,0 +1,111 @@
+/* Cowboy Bebop — polished LuCI navigation */
+.cb-sidebar nav{padding:12px 9px 14px}
+.cb-sidebar > nav > ul > li{margin:0}
+
+/* Top-level sections: compact, uppercase, reference-style labels */
+.cb-sidebar > nav > ul > li.cb-nav-group > .cb-nav-section-heading{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+	min-height:31px;
+	margin:7px 2px 2px;
+	padding:7px 9px 4px;
+	border:0;
+	border-radius:5px;
+	background:transparent;
+	color:#7f8da3;
+	font-size:9px;
+	font-weight:800;
+	letter-spacing:.13em;
+	line-height:1.2;
+	text-transform:uppercase;
+}
+.cb-sidebar > nav > ul > li.cb-nav-group:first-child > .cb-nav-section-heading{margin-top:0}
+.cb-sidebar > nav > ul > li.cb-nav-group > .cb-nav-section-heading:hover,
+.cb-sidebar > nav > ul > li.cb-nav-group.active > .cb-nav-section-heading{
+	background:transparent;
+	color:#b7c2d1;
+}
+.cb-sidebar > nav > ul > li.cb-nav-group > .cb-nav-section-heading::before{display:none!important}
+.cb-nav-section-heading .cb-nav-label{overflow:visible}
+.cb-nav-section-heading .cb-nav-chevron{
+	width:18px;
+	flex:0 0 18px;
+	color:#66758a;
+	font-size:12px;
+	font-weight:500;
+	line-height:1;
+	text-align:center;
+	transform:rotate(0deg);
+	transition:transform .14s ease,color .14s ease;
+}
+.cb-nav-group.open > .cb-nav-section-heading .cb-nav-chevron{transform:rotate(180deg);color:#3b82f6}
+
+/* Sub-items stay hidden until their section is opened */
+.cb-sidebar .cb-nav-submenu{display:none;padding:1px 0 5px 10px!important;margin:0!important}
+.cb-sidebar .cb-nav-group.open > .cb-nav-submenu{display:block}
+.cb-sidebar .cb-nav-submenu .cb-nav-link{
+	position:relative;
+	min-height:34px;
+	margin:1px 0;
+	padding:7px 10px 7px 11px;
+	border-radius:5px;
+	color:#aeb8c7;
+	font-size:12px;
+	line-height:1.25;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-link:hover{
+	background:#182231;
+	color:#fff;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-link.active{
+	background:#1b2738;
+	color:#fff;
+	font-weight:650;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-link.active::before{
+	position:absolute;
+	left:0;
+	top:50%;
+	width:2px;
+	height:19px;
+	margin:-9.5px 0 0;
+	border-radius:0 2px 2px 0;
+	background:#3b82f6;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-svg{width:16px;height:16px;flex-basis:16px;color:#9aa7b8}
+.cb-sidebar .cb-nav-submenu .cb-nav-link.active .cb-nav-svg{color:#6ea2ff}
+
+/* Nested expandable groups, such as Administration */
+.cb-sidebar .cb-nav-submenu .cb-nav-group-heading{
+	position:relative;
+	min-height:34px;
+	margin:1px 0;
+	padding:7px 10px;
+	border-radius:5px;
+	color:#aeb8c7;
+	font-size:12px;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-group-heading:hover,
+.cb-sidebar .cb-nav-submenu .cb-nav-group.active > .cb-nav-group-heading{
+	background:#182231;
+	color:#fff;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-group-heading .cb-nav-chevron{
+	margin-left:auto;
+	color:#68778b;
+	font-size:11px;
+	transition:transform .14s ease;
+}
+.cb-sidebar .cb-nav-submenu .cb-nav-group.open > .cb-nav-group-heading .cb-nav-chevron{transform:rotate(180deg);color:#6ea2ff}
+.cb-sidebar .cb-nav-submenu .cb-nav-group > .cb-nav-submenu{padding-left:17px!important}
+
+/* A clean separator before the machine footer */
+.cb-sidebar > nav > ul > li.cb-nav-group:last-child{padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid #1d2837}
+.cb-sidebar-footer{padding:11px 16px 14px!important;color:#637186!important}
+
+@media(max-width:900px){
+	.cb-sidebar > nav > ul > li.cb-nav-group > .cb-nav-section-heading{min-height:34px;padding-left:10px;padding-right:10px}
+	.cb-sidebar .cb-nav-submenu{padding-left:8px!important}
+}

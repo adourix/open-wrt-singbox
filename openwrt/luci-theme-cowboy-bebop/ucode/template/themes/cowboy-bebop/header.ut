@@ -7,12 +7,29 @@
 <html lang="{{ dispatcher.lang }}">
 <head>
 	<meta charset="utf-8">
-	<title>{{ striptags((dispatched?.title ? _(dispatched.title) + ' | ' : '') + 'Cowboy Bebop Manager') }}</title>
+	<title>{{ striptags((dispatched?.title ? _(dispatched.title) + ' | ' : '') + 'Cowboy Bebop') }}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="darkreader-lock">
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
+	<link rel="stylesheet" href="{{ media }}/reference.css">
 	<link rel="stylesheet" media="only screen and (max-device-width: 854px)" href="{{ media }}/mobile.css">
+	<link rel="stylesheet" href="{{ media }}/sidebar.css">
+	<link rel="stylesheet" href="{{ media }}/actions-fix.css">
 	<link rel="icon" href="{{ media }}/logo.svg" type="image/svg+xml">
+	<style>
+		@media (min-width: 901px) {
+			:root { --cb-sidebar-width: 212px; --cb-topbar-height: 64px; }
+			.cb-sidebar { width: 212px; }
+			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 212px; }
+			.cb-brand { width: 212px; padding-left: 16px; padding-right: 16px; }
+			.cb-sidebar .cb-brand-copy, .cb-sidebar .cb-nav-label, .cb-sidebar .cb-sidebar-footer { opacity: 1; display: block; }
+			.cb-sidebar .cb-nav-group-heading, .cb-sidebar .cb-nav-link { justify-content: flex-start; padding-left: 10px; padding-right: 10px; }
+			.cb-sidebar .cb-nav-submenu { display: none; }
+			.cb-sidebar .cb-nav-group.open > .cb-nav-submenu { display: block; }
+			.cb-sidebar > nav > ul > li.active > .cb-nav-link { background: #1c2a3d; color: #fff; }
+			.cb-sidebar > nav > ul > li.active > .cb-nav-link::before { content: ""; width: 2px; height: 20px; margin-left: -10px; background: #3b82f6; border-radius: 2px; }
+		}
+	</style>
 	{% if (node?.css): %}<link rel="stylesheet" href="{{ resource }}/{{ node.css }}">{% endif %}
 	{% if (css): %}<style>{{ css }}</style>{% endif %}
 	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
@@ -21,14 +38,14 @@
 <body class="{{ blank_page ? 'cb-auth' : ('lang_' + dispatcher.lang + ' ' + entityencode(striptags(node?.title ?? ''), true)) }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
 {% if (!blank_page): %}
 <aside class="cb-sidebar" id="cb-sidebar">
-	<a class="cb-brand" href="{{ dispatcher.build_url('admin/services/cowboy-bebop/overview') }}" aria-label="Cowboy Bebop Manager home">
-		<span class="cb-brand-copy">COWBOY BEBOP<small>NETWORK MANAGER</small></span>
+	<a class="cb-brand" href="{{ dispatcher.build_url('admin/cowboy-bebop') }}" aria-label="Cowboy Bebop home">
+		<img src="{{ media }}/logo.svg" alt="" width="28" height="28"><span class="cb-brand-copy">COWBOY BEBOP<small>ROUTER CONTROL</small></span>
 	</a>
 	<nav aria-label="Main navigation"><ul class="nav" id="topmenu"></ul></nav>
-	<div class="cb-sidebar-footer"><div>Support: +20175555667</div><div>+20 1009823007</div></div>
+	<div class="cb-sidebar-footer">OpenWrt LuCI · Network Control</div>
 </aside>
 <header class="cb-topbar">
-	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><span>COWBOY BEBOP</span></div>
+	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><img src="{{ media }}/logo.svg" alt="" width="24" height="24"><span>COWBOY BEBOP</span></div>
 	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
 </header>
 <main id="maincontent" class="container">
