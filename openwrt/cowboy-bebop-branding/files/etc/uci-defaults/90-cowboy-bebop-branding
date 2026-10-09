@@ -50,11 +50,10 @@ if [ -f /etc/os-release ]; then
 		-e 's/^NAME=.*/NAME="Cowboy Bebop Manager"/' \
 		-e 's/^PRETTY_NAME=.*/PRETTY_NAME="Cowboy Bebop Manager (based on OpenWrt)"/' \
 		-e 's|^HOME_URL=.*|HOME_URL="https://github.com/adourix/open-wrt-singbox"|' \
-		-e 's|^BUG_REPORT_URL=.*|BUG_REPORT_URL="https://github.com/adourix/open-wrt-singbox/issues"|' \
 		/etc/os-release
 
 	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
-		echo 'SUPPORT_PHONE="+20175555667 +20 1009823007"' >> /etc/os-release
+		echo 'SUPPORT_PHONE="+20175555667 +201009823007"' >> /etc/os-release
 	else
 		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +20 1009823007"/' /etc/os-release
 	fi
