@@ -49,7 +49,6 @@ if [ -f /etc/os-release ]; then
 	sed -i \
 		-e 's/^NAME=.*/NAME="Cowboy Bebop Manager"/' \
 		-e 's/^PRETTY_NAME=.*/PRETTY_NAME="Cowboy Bebop Manager (based on OpenWrt)"/' \
-		-e 's|^HOME_URL=.*|HOME_URL="https://github.com/adourix/open-wrt-singbox"|' \
 		/etc/os-release
 
 	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
