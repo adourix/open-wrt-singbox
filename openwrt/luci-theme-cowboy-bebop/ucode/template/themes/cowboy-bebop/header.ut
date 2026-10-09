@@ -22,34 +22,18 @@
 {% if (!blank_page): %}
 <aside class="cb-sidebar" id="cb-sidebar">
 	<a class="cb-brand" href="{{ dispatcher.build_url('admin/services/cowboy-bebop/overview') }}" aria-label="Cowboy Bebop Manager home">
-		<span class="cb-brand-mark" aria-hidden="true"></span>
 		<span class="cb-brand-copy">COWBOY BEBOP<small>NETWORK MANAGER</small></span>
 	</a>
-	<nav aria-label="Main navigation">
-		<ul class="nav" id="topmenu"></ul>
-	</nav>
-	<div class="cb-sidebar-footer">
-		<div>Support: +20175555667</div>
-		<div>+20 1009823007</div>
-	</div>
+	<nav aria-label="Main navigation"><ul class="nav" id="topmenu"></ul></nav>
+	<div class="cb-sidebar-footer"><div>Support: +20175555667</div><div>+20 1009823007</div></div>
 </aside>
 <header class="cb-topbar">
-	<div class="cb-mobile-brand">
-		<button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button>
-		<span>COWBOY BEBOP</span>
-	</div>
+	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><span>COWBOY BEBOP</span></div>
 	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
-	<div class="cb-topbar-right">
-		<div id="indicators"></div>
-	</div>
 </header>
 <main id="maincontent" class="container">
-	{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
-	<div class="alert-message warning"><strong>{{ _('Security notice') }}</strong><p>{{ _('A local administrator password is not configured.') }}</p></div>
-	{% endif %}
-	{% if (boardinfo.rootfs_type == 'initramfs'): %}
-	<div class="alert-message warning"><strong>{{ _('Recovery mode') }}</strong><p>{{ _('Changes may not persist after reboot.') }}</p></div>
-	{% endif %}
+	{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}<div class="alert-message warning"><strong>{{ _('Security notice') }}</strong><p>{{ _('A local administrator password is not configured.') }}</p></div>{% endif %}
+	{% if (boardinfo.rootfs_type == 'initramfs'): %}<div class="alert-message warning"><strong>{{ _('Recovery mode') }}</strong><p>{{ _('Changes may not persist after reboot.') }}</p></div>{% endif %}
 	<noscript><div class="alert-message warning"><strong>{{ _('JavaScript required') }}</strong><p>{{ _('Enable JavaScript to use the management interface.') }}</p></div></noscript>
 	<div id="tabmenu"></div>
 {% endif %}
