@@ -61,7 +61,7 @@ return baseclass.extend({
 				li.appendChild(submenu);
 			}
 			else {
-				li.appendChild(E('a', { 'href': this.urlFor(url, child), 'class': 'cb-nav-link', 'title': _(child.title) }, [
+				li.appendChild(E('a', { 'href': this.urlFor(url, child), 'class': 'cb-nav-link' + (active ? ' active' : ''), 'title': _(child.title) }, [
 					this.iconSvg(child.name, false), E('span', { 'class': 'cb-nav-label' }, [_(child.title)])
 				]));
 			}
@@ -128,15 +128,17 @@ return baseclass.extend({
 
 	statusSectionHasData: function(section) {
 		var rows = section.querySelectorAll('table tr');
-		if (!rows.length) return true;
+		if (!rows.length) return false;
 
 		for (var i = 0; i < rows.length; i++) {
-			var cells = rows[i].querySelectorAll('td');
+			var cells = rows[i].querySelectorAll('td, th');
 			if (cells.length < 2) continue;
-			var valueCell = cells[cells.length - 1];
-			if (valueCell.querySelector('.cbi-progressbar, .cbi-progressbar > div, svg, canvas, img')) return true;
-			var text = (valueCell.textContent || '').replace(/\s+/g, ' ').trim();
-			if (text && text !== '?') return true;
+			for (var c = 1; c < cells.length; c++) {
+				var valueCell = cells[c];
+				if (valueCell.querySelector('.cbi-progressbar, .cbi-progressbar > div, svg, canvas, img')) return true;
+				var text = (valueCell.textContent || '').replace(/\s+/g, ' ').trim();
+				if (text && text !== '?' && text !== '-' && text !== '—') return true;
+			}
 		}
 		return false;
 	},
@@ -148,11 +150,12 @@ return baseclass.extend({
 
 		var check = function() {
 			main.querySelectorAll('.cbi-section').forEach(function(section) {
-				var heading = section.querySelector('.cbi-title h3');
+				var heading = section.querySelector('.cbi-title h3, .cbi-section-title h3, h3, h2, legend');
 				if (!heading) return;
 				var title = (heading.textContent || '').replace(/^(Hide|Show)\s*/i, '').trim().toLowerCase();
 				if (!/^(memory|storage|port status)$/.test(title)) return;
-				if (!section.querySelector('table')) return;
+				var table = section.querySelector('table');
+				if (!table) return;
 				var empty = !this.statusSectionHasData(section);
 				section.classList.toggle('cb-status-empty', empty);
 				section.style.display = empty ? 'none' : '';
@@ -160,6 +163,7 @@ return baseclass.extend({
 		};
 
 		check();
+		setTimeout(check, 300);
 		setTimeout(check, 1200);
 		setTimeout(check, 3000);
 
