@@ -7,7 +7,7 @@
 <html lang="{{ dispatcher.lang }}">
 <head>
 	<meta charset="utf-8">
-	<title>{{ striptags(`${dispatched?.title ? `${_(dispatched.title)} | ` : ''}Cowboy Bebop Manager`) }}</title>
+	<title>{{ striptags((dispatched?.title ? _(dispatched.title) + ' | ' : '') + 'Cowboy Bebop Manager') }}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="darkreader-lock">
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
@@ -18,7 +18,7 @@
 	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
 	<script src="{{ resource }}/cbi.js"></script>
 </head>
-<body class="{{ blank_page ? 'cb-auth' : `lang_${dispatcher.lang} ${entityencode(striptags(node?.title ?? ''), true)}` }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
+<body class="{{ blank_page ? 'cb-auth' : ('lang_' + dispatcher.lang + ' ' + entityencode(striptags(node?.title ?? ''), true)) }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
 {% if (!blank_page): %}
 <header>
 	<a class="cb-brand" href="/">
