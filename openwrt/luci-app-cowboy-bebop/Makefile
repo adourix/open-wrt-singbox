@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-cowboy-bebop
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -36,9 +36,6 @@ endef
 define Package/luci-app-cowboy-bebop/install
 	$(INSTALL_DIR) $(1)/www/luci-static/resources/view/cowboy-bebop
 	$(INSTALL_DATA) ./htdocs/luci-static/resources/view/cowboy-bebop/overview.js $(1)/www/luci-static/resources/view/cowboy-bebop/overview.js
-
-	$(INSTALL_DIR) $(1)/www/luci-static/resources
-	$(INSTALL_DATA) ./htdocs/luci-static/resources/cowboy-bebop.css $(1)/www/luci-static/resources/cowboy-bebop.css
 
 	$(INSTALL_DIR) $(1)/usr/libexec/rpcd
 	$(INSTALL_BIN) ./root/usr/libexec/rpcd/luci.cowboy_bebop $(1)/usr/libexec/rpcd/luci.cowboy_bebop
