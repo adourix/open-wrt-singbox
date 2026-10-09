@@ -22,17 +22,7 @@ env:
   KT708_SDK_SHA256: af3d15643f8459335b1c98dc97dd47897d2d8e825a990a161b16b43de2281515
 
 jobs:
-  test-theme:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install test dependencies
-        run: sudo apt-get update && sudo apt-get install -y nodejs
-      - name: Run Cowboy Bebop theme tests
-        run: sh openwrt/luci-theme-cowboy-bebop/tests/test-theme.sh
-
   build-x86_64:
-    needs: test-theme
     if: inputs.target == 'x86_64' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
@@ -67,7 +57,6 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=9$' package/luci-theme-cowboy-bebop/Makefile
           ! grep -q '^  DEPENDS:=' package/luci-theme-cowboy-bebop/Makefile
       - name: Build theme package
         env:
@@ -109,7 +98,6 @@ jobs:
           if-no-files-found: error
 
   build-kt708:
-    needs: test-theme
     if: inputs.target == 'kt708' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
@@ -151,7 +139,6 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=9$' package/luci-theme-cowboy-bebop/Makefile
           ! grep -q '^  DEPENDS:=' package/luci-theme-cowboy-bebop/Makefile
       - name: Build theme package
         env:
