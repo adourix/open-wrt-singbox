@@ -1,12 +1,11 @@
 /* Cowboy Bebop — LuCI page action normalization
  *
- * Important: LuCI 25.x renders Save & Apply as a ComboButton using
- * .cbi-dropdown.cbi-button with an internal <ul>. Never style that
- * internal <ul> as a page-action flex row; doing so causes the menu
- * labels to spill into the blue button.
+ * LuCI 25.x renders Save & Apply as a ComboButton using
+ * .cbi-dropdown.cbi-button with internal <ul> elements. Those lists are
+ * popup content, not page-action rows. Keep them completely isolated from
+ * the action-bar flex rules.
  */
 
-/* Action bar itself */
 .cbi-page-actions {
 	display: flex !important;
 	align-items: center !important;
@@ -22,8 +21,7 @@
 	box-sizing: border-box !important;
 }
 
-/* Only direct list children are legacy action wrappers.
- * Do NOT match dropdown internals here. */
+/* Legacy direct list wrappers only. */
 .cbi-page-actions > ul,
 .cbi-page-actions > ol {
 	display: flex !important;
@@ -51,7 +49,7 @@
 	box-shadow: none !important;
 }
 
-/* Normal standalone Save / Reset / other action buttons */
+/* Standalone page-action buttons. */
 .cbi-page-actions > .cbi-button,
 .cbi-page-actions > button,
 .cbi-page-actions > input.cbi-button,
@@ -87,8 +85,7 @@
 	cursor: pointer !important;
 }
 
-/* The LuCI ComboButton: Save & Apply + Apply unchecked.
- * Keep the outer control compact and let LuCI own its internal menu. */
+/* LuCI 25.x ComboButton — Save & Apply / Apply unchecked. */
 .cbi-page-actions .cbi-dropdown.cbi-button {
 	display: inline-flex !important;
 	align-items: stretch !important;
@@ -109,10 +106,22 @@
 	overflow: visible !important;
 }
 
-/* Closed-state preview label */
-.cbi-page-actions .cbi-dropdown.cbi-button > .preview {
+/* Closed-state preview */
+.cbi-page-actions .cbi-dropdown.cbi-button > ul.preview {
 	display: block !important;
 	flex: 1 1 auto !important;
+	width: auto !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+	list-style: none !important;
+	overflow: hidden !important;
+}
+
+.cbi-page-actions .cbi-dropdown.cbi-button > ul.preview > li {
+	display: block !important;
 	width: auto !important;
 	min-width: 0 !important;
 	margin: 0 !important;
@@ -126,9 +135,10 @@
 	white-space: nowrap !important;
 	overflow: hidden !important;
 	text-overflow: ellipsis !important;
+	list-style: none !important;
 }
 
-/* LuCI ComboButton arrow area */
+/* Dropdown arrow area */
 .cbi-page-actions .cbi-dropdown.cbi-button > .open {
 	display: flex !important;
 	align-items: center !important;
@@ -136,6 +146,7 @@
 	flex: 0 0 30px !important;
 	width: 30px !important;
 	min-width: 30px !important;
+	height: 34px !important;
 	margin: 0 !important;
 	padding: 0 !important;
 	border: 0 !important;
@@ -144,32 +155,30 @@
 	color: #fff !important;
 }
 
-/* Critical: the internal dropdown list must NOT inherit the action-bar
- * flex/width/padding rules. It is a popup, not another action row. */
-.cbi-page-actions .cbi-dropdown.cbi-button > ul,
-.cbi-page-actions .cbi-dropdown.cbi-button > ul.dropdown,
-.cbi-page-actions .cbi-dropdown.cbi-button > ul.preview {
-	box-sizing: border-box !important;
-	width: auto !important;
-	min-width: 100% !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	border: 0 !important;
-	background: transparent !important;
-	list-style: none !important;
-}
-
+/* Critical: dropdown popup is hidden until the ComboButton opens it. */
 .cbi-page-actions .cbi-dropdown.cbi-button > ul.dropdown {
+	display: none !important;
 	position: absolute !important;
 	top: calc(100% + 4px) !important;
 	right: 0 !important;
 	left: auto !important;
 	z-index: 2000 !important;
-	background: #fff !important;
+	box-sizing: border-box !important;
+	width: auto !important;
+	min-width: 100% !important;
+	max-width: 320px !important;
+	margin: 0 !important;
+	padding: 0 !important;
 	border: 1px solid #d0d5dd !important;
 	border-radius: 7px !important;
+	background: #fff !important;
 	box-shadow: 0 8px 20px rgba(16,24,40,.12) !important;
 	overflow: hidden !important;
+	list-style: none !important;
+}
+
+.cbi-page-actions .cbi-dropdown.cbi-button[open] > ul.dropdown {
+	display: block !important;
 }
 
 .cbi-page-actions .cbi-dropdown.cbi-button > ul.dropdown > li {
@@ -190,13 +199,13 @@
 	color: #17202b !important;
 }
 
-/* Do not let generic button rules style the hidden dropdown entries as
- * additional page-action buttons. */
 .cbi-page-actions .cbi-dropdown.cbi-button > ul.dropdown .cbi-button,
 .cbi-page-actions .cbi-dropdown.cbi-button > ul.dropdown button {
+	display: block !important;
 	width: 100% !important;
 	min-width: 0 !important;
 	min-height: 34px !important;
+	margin: 0 !important;
 	padding: 7px 12px !important;
 	border: 0 !important;
 	border-radius: 0 !important;
@@ -214,9 +223,7 @@
 .cbi-page-actions > button.cbi-button-apply,
 .cbi-page-actions > button[name="cbi.apply"],
 .cbi-page-actions > input[name="cbi.apply"],
-.cbi-page-actions > input[name="cbi.submit"],
-.cbi-page-actions > ul .cbi-button-save,
-.cbi-page-actions > ul .cbi-button-apply {
+.cbi-page-actions > input[name="cbi.submit"] {
 	background: #2563eb !important;
 	border-color: #2563eb !important;
 	color: #fff !important;
@@ -239,7 +246,8 @@
 }
 
 .cbi-page-actions .cbi-dropdown.cbi-button:hover,
-.cbi-page-actions .cbi-dropdown.cbi-button:hover > .preview,
+.cbi-page-actions .cbi-dropdown.cbi-button:hover > ul.preview,
+.cbi-page-actions .cbi-dropdown.cbi-button:hover > ul.preview > li,
 .cbi-page-actions .cbi-dropdown.cbi-button:hover > .open {
 	background: #1d4ed8 !important;
 	border-color: #1d4ed8 !important;
@@ -267,7 +275,6 @@
 	padding: 0 !important;
 }
 
-/* Manager page owns its own action controls. */
 body:has(.cb-manager-page) .cbi-page-actions {
 	display: none !important;
 }
