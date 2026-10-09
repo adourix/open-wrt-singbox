@@ -20,13 +20,31 @@
 </head>
 <body class="{{ blank_page ? 'cb-auth' : ('lang_' + dispatcher.lang + ' ' + entityencode(striptags(node?.title ?? ''), true)) }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
 {% if (!blank_page): %}
-<header>
-	<a class="cb-brand" href="/">
+<aside class="cb-sidebar" id="cb-sidebar">
+	<a class="cb-brand" href="{{ dispatcher.build_url('admin/services/cowboy-bebop/overview') }}">
 		<img src="{{ media }}/logo.svg" alt="">
-		<span>COWBOY BEBOP MANAGER<small>CONTROL CENTER</small></span>
+		<span>COWBOY BEBOP<small>NETWORK MANAGER</small></span>
 	</a>
-	<ul class="nav" id="topmenu"></ul>
-	<div id="indicators"></div>
+	<nav aria-label="Main navigation">
+		<ul class="nav" id="topmenu"></ul>
+	</nav>
+	<div class="cb-sidebar-footer">
+		<div class="cb-sidebar-status"><i></i><span>System online</span></div>
+		<div>Support: +20175555667</div>
+		<div>+20 1009823007</div>
+	</div>
+</aside>
+<header class="cb-topbar">
+	<div class="cb-mobile-brand">
+		<button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button>
+		<span>COWBOY BEBOP</span>
+	</div>
+	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
+	<div class="cb-topbar-right">
+		<div class="cb-online"><i></i><span>Online</span></div>
+		<div class="cb-hostname">{{ boardinfo.hostname ?? 'cowboy-bebop' }}</div>
+		<div id="indicators"></div>
+	</div>
 </header>
 <main id="maincontent" class="container">
 	{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
