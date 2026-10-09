@@ -1,0 +1,176 @@
+/* Phase C reference UI layer.
+ * Visual direction: compact dark icon rail, white work area, blue actions,
+ * restrained borders and dense LuCI-compatible tables/forms.
+ */
+:root {
+  --cb-sidebar-width: 56px;
+  --cb-sidebar-expanded: 238px;
+  --cb-topbar-height: 54px;
+  --cb-bg: #f5f7fa;
+  --cb-panel: #fff;
+  --cb-text: #17202b;
+  --cb-muted: #667085;
+  --cb-line: #e4e7ec;
+  --cb-line-strong: #cfd5dd;
+  --cb-blue: #2563eb;
+  --cb-blue-dark: #1d4ed8;
+  --cb-blue-soft: #eff6ff;
+  --cb-green: #12a05c;
+  --cb-yellow: #d08a18;
+  --cb-red: #d04444;
+}
+
+html, body { background: var(--cb-bg); }
+body { font-size: 13px; color: var(--cb-text); }
+
+.cb-sidebar {
+  width: var(--cb-sidebar-width);
+  background: #0f1722;
+  border-right: 1px solid #080d14;
+  transition: width .16s ease;
+  overflow-x: hidden;
+}
+.cb-sidebar:hover,
+.cb-sidebar:focus-within { width: var(--cb-sidebar-expanded); }
+.cb-brand {
+  width: var(--cb-sidebar-expanded);
+  min-height: var(--cb-topbar-height);
+  padding: 0 15px;
+  border-bottom-color: #202a36;
+}
+.cb-brand::before {
+  content: "";
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  margin-right: 12px;
+  border: 1px solid #344154;
+  border-radius: 6px;
+  background: radial-gradient(circle at center, #2563eb 0 3px, transparent 4px), #172231;
+  box-shadow: inset 0 0 0 5px #111b28;
+}
+.cb-brand-copy { white-space: nowrap; }
+.cb-sidebar:not(:hover) .cb-brand-copy { opacity: 0; }
+.cb-sidebar nav { padding: 10px 7px 15px; }
+.cb-sidebar:not(:hover) nav { padding-left: 6px; padding-right: 6px; }
+.cb-nav-group-heading,
+.cb-nav-link {
+  min-height: 38px;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 7px 10px;
+  border-radius: 6px;
+}
+.cb-nav-group-heading { width: 100%; }
+.cb-nav-svg { width: 17px; height: 17px; flex: 0 0 17px; }
+.cb-sidebar:not(:hover) .cb-nav-label,
+.cb-sidebar:not(:hover) .cb-nav-group-heading::after { display: none; }
+.cb-sidebar:not(:hover) .cb-nav-group-heading,
+.cb-sidebar:not(:hover) .cb-nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+.cb-sidebar:not(:hover) .cb-nav-submenu { display: none !important; }
+.cb-sidebar:not(:hover) .cb-nav-group-heading { cursor: pointer; }
+.cb-sidebar-footer { width: var(--cb-sidebar-expanded); white-space: nowrap; }
+.cb-sidebar:not(:hover) .cb-sidebar-footer { opacity: 0; }
+
+.cb-topbar {
+  margin-left: var(--cb-sidebar-width);
+  height: var(--cb-topbar-height);
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid var(--cb-line);
+}
+.cb-page-title { font-size: 14px; font-weight: 700; color: #202939; }
+#maincontent.container {
+  width: calc(100% - var(--cb-sidebar-width));
+  margin-left: var(--cb-sidebar-width);
+  min-height: calc(100vh - var(--cb-topbar-height));
+  padding: 18px 26px 38px;
+}
+#maincontent > .cbi-map,
+#maincontent > .cbi-section,
+#maincontent > .cbi-map-descr,
+#maincontent > .alert-message,
+#maincontent > #tabmenu,
+#maincontent > h1,
+#maincontent > h2,
+#maincontent > h3,
+#maincontent > .view { max-width: 1260px; }
+
+.cbi-map,
+.cbi-section {
+  border: 1px solid var(--cb-line);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.025);
+  background: var(--cb-panel);
+}
+.cbi-map { padding: 17px 19px; }
+.cbi-section { padding: 15px 18px; margin: 10px 0; }
+.cbi-section-descr, .cbi-map-descr { color: var(--cb-muted); font-size: 12px; }
+
+h1 { font-size: 22px; }
+h2 { font-size: 18px; }
+h3 { font-size: 14px; }
+
+input, select, textarea, .cbi-input-text {
+  min-height: 34px;
+  border-color: var(--cb-line-strong);
+  border-radius: 5px;
+  padding: 7px 9px;
+  background: #fff;
+}
+input:focus, select:focus, textarea:focus, .cbi-input-text:focus {
+  border-color: var(--cb-blue);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.09);
+}
+.btn, button, .cbi-button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.cbi-button-apply, .cbi-button-action { background: var(--cb-blue); border-color: var(--cb-blue); }
+.cbi-button-apply:hover, .cbi-button-action:hover { background: var(--cb-blue-dark); }
+
+.cbi-value { min-height: 42px; padding: 7px 0; grid-template-columns: minmax(170px, 27%) minmax(0, 1fr); }
+.cbi-value-title { color: #344054; font-size: 12px; }
+.cbi-value-description { font-size: 11px; }
+
+table, .table { border-color: var(--cb-line); border-radius: 6px; }
+th { background: #f8fafc; color: #475467; font-size: 10px; text-transform: none; }
+th, td { padding: 8px 10px; }
+tbody tr:hover { background: #f8fbff; }
+
+.alert-message { border-radius: 6px; padding: 9px 11px; }
+.alert-message.success { background: #f2fbf6; border-color: #bfe6cf; }
+.alert-message.warning { background: #fffaf0; border-color: #ead4a4; }
+.alert-message.error { background: #fff5f5; border-color: #edbaba; }
+
+#tabmenu { margin-bottom: 12px; }
+.cb-tabmenu a { padding: 7px 13px 8px; font-size: 12px; }
+
+.ifacebox { width: 215px !important; min-width: 215px !important; border-radius: 7px !important; }
+
+footer { margin-left: var(--cb-sidebar-width); padding: 12px 24px; background: #101722; border-top: 1px solid #0a1018; }
+
+.cb-manager-page { max-width: 1120px; }
+.cb-manager-hero { padding-bottom: 15px; }
+.cb-manager-hero h1 { font-size: 24px; }
+.cb-status-hero { border-radius: 6px; }
+
+body.cb-auth { background: #101722; }
+.cb-auth-card { border-radius: 8px; box-shadow: 0 18px 48px rgba(0,0,0,.28); }
+.cb-auth-brand h1 { font-size: 18px; }
+
+@media (max-width: 900px) {
+  :root { --cb-sidebar-width: 0px; }
+  .cb-sidebar { width: 238px; }
+  .cb-sidebar:hover, .cb-sidebar:focus-within { width: 238px; }
+  .cb-sidebar:not(:hover) .cb-nav-label,
+  .cb-sidebar:not(:hover) .cb-nav-group-heading::after { display: inline; }
+  .cb-sidebar:not(:hover) .cb-nav-group-heading,
+  .cb-sidebar:not(:hover) .cb-nav-link { justify-content: flex-start; padding-left: 10px; padding-right: 10px; }
+  .cb-sidebar:not(:hover) .cb-nav-submenu { display: block; }
+  .cb-sidebar:not(:hover) .cb-brand-copy,
+  .cb-sidebar:not(:hover) .cb-sidebar-footer { opacity: 1; }
+  .cb-topbar, #maincontent.container, footer { margin-left: 0; }
+}
