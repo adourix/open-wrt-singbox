@@ -17,8 +17,8 @@ pass() { echo "TEST PASS: $*"; }
 [ -f "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" ] || fail "theme activation script is missing"
 pass "all theme files exist"
 
-grep -q '^PKG_RELEASE:=8$' "$ROOT/Makefile" || fail "expected theme release 8"
-grep -q 'DEPENDS:=+luci-base' "$ROOT/Makefile" || fail "luci-base dependency missing"
+grep -q '^PKG_RELEASE:=9$' "$ROOT/Makefile" || fail "expected theme release 9"
+! grep -q '^  DEPENDS:=' "$ROOT/Makefile" || fail "theme must not force-build LuCI runtime dependencies"
 pass "package metadata is correct"
 
 HEADER="$ROOT/ucode/template/themes/cowboy-bebop/header.ut"
