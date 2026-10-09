@@ -18,7 +18,7 @@
 	<link rel="icon" href="{{ media }}/logo.svg" type="image/svg+xml">
 	<style>
 		@media (min-width: 901px) {
-			:root { --cb-sidebar-width: 260px; --cb-topbar-height: 64px; }
+			:root { --cb-sidebar-width: 260px; --cb-sidebar-expanded: 260px; --cb-topbar-height: 64px; }
 			.cb-sidebar { width: 260px; }
 			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 260px; }
 			.cb-brand { width: 260px; padding-left: 20px; padding-right: 20px; }
@@ -28,8 +28,10 @@
 			.cb-sidebar .cb-nav-group.open > .cb-nav-submenu { display: block; }
 			.cb-sidebar > nav > ul > li.active > .cb-nav-link { background: #1c2a3d; color: #fff; }
 			.cb-sidebar > nav > ul > li.active > .cb-nav-link::before { content: ""; width: 2px; height: 20px; margin-left: -12px; background: #3b82f6; border-radius: 2px; }
-			.cb-topbar { padding-left: 22px; }
+			.cb-topbar { margin-left: 260px; padding-left: 22px; }
 			.cb-page-title { margin-left: 0; }
+			#maincontent.container { width: calc(100% - 260px); margin-left: 260px; }
+			footer { margin-left: 260px; }
 		}
 		.cb-brand img, .cb-mobile-brand img { display: none !important; }
 		.cb-brand { gap: 0; }
