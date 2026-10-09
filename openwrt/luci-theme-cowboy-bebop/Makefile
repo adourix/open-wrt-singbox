@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=15
+PKG_RELEASE:=16
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
