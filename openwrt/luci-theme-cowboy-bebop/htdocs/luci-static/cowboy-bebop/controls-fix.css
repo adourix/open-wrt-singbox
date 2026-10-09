@@ -39,36 +39,20 @@ label {
 	min-height: 24px !important;
 }
 
-/* LuCI's custom select/dropdown widget. The option list must be hidden until opened. */
+/* LuCI custom dropdown: keep its native DOM contract and only replace the visual shell. */
 .cbi-dropdown:not(.btn):not(.cbi-button) {
 	position: relative !important;
 	display: inline-flex !important;
 	align-items: center !important;
-	width: auto !important;
 	min-width: 12em !important;
 	min-height: 36px !important;
-	padding: 7px 34px 7px 10px !important;
+	box-sizing: border-box !important;
 	border: 1px solid #c9d0d9 !important;
 	border-radius: 6px !important;
 	background: #fff !important;
 	color: #17202b !important;
 	box-shadow: none !important;
-	cursor: pointer !important;
 	vertical-align: middle !important;
-}
-
-.cbi-dropdown:not(.btn):not(.cbi-button)::after {
-	content: "" !important;
-	position: absolute !important;
-	right: 12px !important;
-	top: 50% !important;
-	width: 6px !important;
-	height: 6px !important;
-	margin-top: -4px !important;
-	border-right: 1.5px solid #667085 !important;
-	border-bottom: 1.5px solid #667085 !important;
-	transform: rotate(45deg) !important;
-	pointer-events: none !important;
 }
 
 .cbi-dropdown:not(.btn):not(.cbi-button)[open] {
@@ -76,14 +60,32 @@ label {
 	box-shadow: 0 0 0 2px rgba(37,99,235,.09) !important;
 }
 
-.cbi-dropdown:not(.btn):not(.cbi-button)[open]::after {
-	transform: rotate(225deg) !important;
-	margin-top: -1px !important;
+/* LuCI owns the actual open button. Do not replace it with a pseudo-element. */
+.cbi-dropdown > .open,
+.cbi-dropdown > .more {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 30px !important;
+	width: 30px !important;
+	min-width: 30px !important;
+	min-height: 34px !important;
+	margin: 0 !important;
+	padding: 0 7px !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: #667085 !important;
+	cursor: pointer !important;
 }
 
-/* Never let the dropdown's option list inherit generic LuCI content-list styling. */
+.cbi-dropdown > .open:hover,
+.cbi-dropdown > .more:hover {
+	background: #f3f6fa !important;
+	color: #2563eb !important;
+}
+
+/* Option lists are popup content, never normal page lists. */
 .cbi-dropdown > ul {
-	display: none !important;
 	position: absolute !important;
 	z-index: 2000 !important;
 	top: calc(100% + 4px) !important;
@@ -103,7 +105,15 @@ label {
 	box-sizing: border-box !important;
 }
 
-.cbi-dropdown[open] > ul {
+.cbi-dropdown > ul.preview {
+	display: none !important;
+}
+
+.cbi-dropdown > ul.dropdown {
+	display: none !important;
+}
+
+.cbi-dropdown[open] > ul.dropdown {
 	display: block !important;
 }
 
@@ -124,7 +134,8 @@ label {
 	white-space: nowrap !important;
 }
 
-.cbi-dropdown > ul > li:hover {
+.cbi-dropdown > ul > li:hover,
+.cbi-dropdown > ul > li.focus {
 	background: #f3f6fa !important;
 }
 
