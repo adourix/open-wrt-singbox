@@ -1,6 +1,6 @@
-/* Cowboy Bebop — restore native LuCI form controls and dropdown widgets */
+/* Cowboy Bebop — LuCI form controls and native dropdown widgets */
 
-/* Native checkbox/radio controls must not inherit the generic text-input box model. */
+/* Native checkbox/radio controls. */
 input[type="checkbox"],
 input[type="radio"] {
 	appearance: auto !important;
@@ -14,7 +14,6 @@ input[type="radio"] {
 	margin: 0 6px 0 0 !important;
 	padding: 0 !important;
 	border: initial !important;
-	border-radius: 3px !important;
 	background: initial !important;
 	box-shadow: none !important;
 	vertical-align: middle !important;
@@ -33,13 +32,21 @@ label {
 .cbi-value-field > label,
 .cbi-value-field label,
 .cbi-value-title + .cbi-value-field label {
-	display: inline-flex !important;
 	align-items: center !important;
 	gap: 4px !important;
 	min-height: 24px !important;
 }
 
-/* LuCI custom dropdown: keep its native DOM contract and only replace the visual shell. */
+/*
+ * LuCI Dropdown contract:
+ * - the first UL is the collapsed value renderer
+ * - when opened LuCI adds .dropdown to that UL
+ * - LuCI also creates a temporary .preview UL
+ *
+ * Do not position the base UL absolutely. Doing so breaks selected values,
+ * makes text wrap character-by-character and causes interface badges to float
+ * outside their option rows.
+ */
 .cbi-dropdown:not(.btn):not(.cbi-button) {
 	position: relative !important;
 	display: inline-flex !important;
@@ -47,12 +54,14 @@ label {
 	min-width: 12em !important;
 	min-height: 36px !important;
 	box-sizing: border-box !important;
+	padding: 0 !important;
 	border: 1px solid #c9d0d9 !important;
 	border-radius: 6px !important;
 	background: #fff !important;
 	color: #17202b !important;
 	box-shadow: none !important;
 	vertical-align: middle !important;
+	overflow: visible !important;
 }
 
 .cbi-dropdown:not(.btn):not(.cbi-button)[open] {
@@ -60,7 +69,56 @@ label {
 	box-shadow: 0 0 0 2px rgba(37,99,235,.09) !important;
 }
 
-/* LuCI owns the actual open button. Do not replace it with a pseudo-element. */
+/* Collapsed dropdown value list. */
+.cbi-dropdown > ul {
+	position: static !important;
+	display: flex !important;
+	align-items: center !important;
+	flex: 1 1 auto !important;
+	width: 100% !important;
+	min-width: 0 !important;
+	max-width: none !important;
+	max-height: none !important;
+	overflow: hidden !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.cbi-dropdown > ul > li {
+	display: none !important;
+	position: relative !important;
+	align-items: center !important;
+	min-width: 0 !important;
+	min-height: 32px !important;
+	margin: 0 !important;
+	padding: 6px 9px !important;
+	list-style: none !important;
+	border: 0 !important;
+	border-radius: 5px !important;
+	background: transparent !important;
+	color: #344054 !important;
+	font-size: 12px !important;
+	line-height: 18px !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.cbi-dropdown > ul > li[display] {
+	display: flex !important;
+}
+
+.cbi-dropdown > ul > li[display] + li[display] {
+	border-left: 1px solid #e4e7ec !important;
+	border-radius: 0 !important;
+}
+
+/* LuCI owns the actual open button. */
 .cbi-dropdown > .open,
 .cbi-dropdown > .more {
 	display: flex !important;
@@ -84,17 +142,20 @@ label {
 	color: #2563eb !important;
 }
 
-/* Option lists are popup content, never normal page lists. */
-.cbi-dropdown > ul {
+/* Popup option list. LuCI toggles .dropdown on the same UL when opening. */
+.cbi-dropdown > ul.dropdown {
 	position: absolute !important;
 	z-index: 2000 !important;
 	top: calc(100% + 4px) !important;
+	bottom: auto !important;
 	left: 0 !important;
+	display: block !important;
 	width: max-content !important;
 	min-width: 100% !important;
 	max-width: min(420px, 80vw) !important;
 	max-height: 320px !important;
-	overflow: auto !important;
+	overflow-x: hidden !important;
+	overflow-y: auto !important;
 	margin: 0 !important;
 	padding: 4px !important;
 	list-style: none !important;
@@ -109,21 +170,14 @@ label {
 	display: none !important;
 }
 
-.cbi-dropdown > ul.dropdown {
-	display: none !important;
-}
-
-.cbi-dropdown[open] > ul.dropdown {
-	display: block !important;
-}
-
-.cbi-dropdown > ul > li {
+.cbi-dropdown > ul.dropdown > li {
 	display: flex !important;
 	align-items: center !important;
 	position: relative !important;
-	min-height: 32px !important;
+	min-width: 0 !important;
+	min-height: 34px !important;
 	margin: 0 !important;
-	padding: 6px 9px !important;
+	padding: 7px 9px !important;
 	list-style: none !important;
 	border: 0 !important;
 	border-radius: 5px !important;
@@ -132,29 +186,94 @@ label {
 	font-size: 12px !important;
 	line-height: 18px !important;
 	white-space: nowrap !important;
+	overflow: hidden !important;
 }
 
-.cbi-dropdown > ul > li:hover,
-.cbi-dropdown > ul > li.focus {
+.cbi-dropdown > ul.dropdown > li:hover,
+.cbi-dropdown > ul.dropdown > li.focus {
 	background: #f3f6fa !important;
 }
 
-.cbi-dropdown > ul > li[selected],
-.cbi-dropdown > ul > li[unselectable] {
+.cbi-dropdown > ul.dropdown > li[selected] {
 	background: #eef4ff !important;
 	color: #2563eb !important;
 }
 
-.cbi-dropdown > ul > li > input[type="checkbox"] {
-	flex: 0 0 15px !important;
-	margin-right: 7px !important;
+/* Multi-select checkbox form generated by LuCI. */
+.cbi-dropdown > ul.dropdown > li > form {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 20px !important;
+	width: 20px !important;
+	min-width: 20px !important;
+	margin: 0 7px 0 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
 }
 
-/* Prevent generic content-list rules from leaking into form controls. */
+.cbi-dropdown > ul.dropdown > li > form > input[type="checkbox"] {
+	flex: 0 0 15px !important;
+	margin: 0 !important;
+}
+
+.cbi-dropdown > ul.dropdown > li > label {
+	display: flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	min-height: 20px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+/* Interface badges inside dropdown choices: keep them compact and inline. */
+.cbi-dropdown > ul.dropdown .ifacebadge {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	width: auto !important;
+	min-width: 0 !important;
+	max-width: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: inherit !important;
+	vertical-align: middle !important;
+}
+
+.cbi-dropdown > ul.dropdown .ifacebadge > img {
+	display: inline-block !important;
+	width: 16px !important;
+	height: 16px !important;
+	min-width: 16px !important;
+	min-height: 16px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	object-fit: contain !important;
+	vertical-align: middle !important;
+}
+
+.cbi-dropdown > ul.dropdown .ifacebadge > em {
+	margin: 0 !important;
+	font-style: normal !important;
+	font-size: 12px !important;
+	line-height: 18px !important;
+}
+
+/* Do not let generic list/badge rules create bullets or oversized boxes here. */
 .cbi-map .cbi-dropdown > ul,
 .cbi-section .cbi-dropdown > ul,
 .cbi-value .cbi-dropdown > ul {
-	padding-left: 4px !important;
+	padding-left: 0 !important;
 }
 
 .cbi-dynlist,
@@ -163,7 +282,6 @@ select {
 	min-height: 36px !important;
 }
 
-/* Keep disabled controls visibly disabled but still structurally intact. */
 input:disabled,
 select:disabled,
 textarea:disabled,
@@ -177,7 +295,7 @@ textarea:disabled,
 		max-width: 100% !important;
 	}
 
-	.cbi-dropdown > ul {
+	.cbi-dropdown > ul.dropdown {
 		max-width: calc(100vw - 40px) !important;
 	}
 }
