@@ -41,11 +41,9 @@ label {
  * LuCI Dropdown contract:
  * - the first UL is the collapsed value renderer
  * - when opened LuCI adds .dropdown to that UL
- * - LuCI also creates a temporary .preview UL
+ * - LuCI may create a temporary .preview UL
  *
- * Do not position the base UL absolutely. Doing so breaks selected values,
- * makes text wrap character-by-character and causes interface badges to float
- * outside their option rows.
+ * Never position/show the base UL or every dropdown popup globally.
  */
 .cbi-dropdown:not(.btn):not(.cbi-button) {
 	position: relative !important;
@@ -142,14 +140,17 @@ label {
 	color: #2563eb !important;
 }
 
-/* Popup option list. LuCI toggles .dropdown on the same UL when opening. */
+/*
+ * Popup option list. IMPORTANT: hidden by default. LuCI adds [open] to the
+ * parent while the user is interacting with this specific dropdown.
+ */
 .cbi-dropdown > ul.dropdown {
 	position: absolute !important;
 	z-index: 2000 !important;
 	top: calc(100% + 4px) !important;
 	bottom: auto !important;
 	left: 0 !important;
-	display: block !important;
+	display: none !important;
 	width: max-content !important;
 	min-width: 100% !important;
 	max-width: min(420px, 80vw) !important;
@@ -166,7 +167,15 @@ label {
 	box-sizing: border-box !important;
 }
 
+.cbi-dropdown[open] > ul.dropdown {
+	display: block !important;
+}
+
 .cbi-dropdown > ul.preview {
+	display: none !important;
+}
+
+.cbi-dropdown[open] > ul.preview {
 	display: none !important;
 }
 
