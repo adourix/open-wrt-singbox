@@ -3,7 +3,6 @@
 'require rpc';
 'require ui';
 'require css';
-
 'require css'('view/cowboy-bebop/overview.css');
 
 var callStatus = rpc.declare({ object: 'luci.cowboy_bebop', method: 'status', expect: { '': {} } });
@@ -163,7 +162,8 @@ return view.extend({
   }
   function apply() {
    if (!url.value.trim()) { notify('Paste a new VMess or VLESS URL before applying.', 'error'); return; }
-   run(callApply({ proxy_url: url.value.trim() }), 'Failed to apply configuration.', 'Configuration applied. Confirm it before the safety timer expires.').then(function() { url.value = ''; return refresh(); });
+   var value = url.value.trim();
+   run(callApply({ proxy_url: value }), 'Failed to apply configuration.', 'Configuration applied. Confirm it before the safety timer expires.').then(function() { url.value = ''; return refresh(); });
   }
   function start() { run(callStart(), 'Failed to start service.', 'Service started.'); }
   function stop() { run(callStop(), 'Failed to stop service.', 'Service stopped; the saved profile is preserved.'); }
