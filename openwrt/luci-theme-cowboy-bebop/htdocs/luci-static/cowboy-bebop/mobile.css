@@ -1,9 +1,10 @@
 @media screen and (max-device-width: 600px) {
-  header { position: relative; flex-wrap: wrap; padding: 12px 14px; gap: 10px; }
-  .cb-brand { width: 100%; }
-  #topmenu { width: 100%; order: 3; overflow-x: auto; }
-  #maincontent.container { width: calc(100% - 24px); padding: 20px 0 42px; }
-  .cbi-map, .cbi-section { padding: 14px; border-radius: 10px; }
+  .cb-sidebar { width: 270px; }
+  .cb-sidebar nav { padding: 12px 10px; }
+  #topmenu { width: 100%; overflow: visible; }
+  .cb-topbar { position: sticky; top: 0; }
+  #maincontent.container { width: 100%; padding: 20px 12px 42px; }
+  .cbi-map, .cbi-section { padding: 14px; border-radius: 8px; }
   .cbi-page-actions .cbi-button, .cbi-page-actions .btn { flex: 1 1 140px; }
   .cbi-value { grid-template-columns: 1fr; }
   table { display: block; overflow-x: auto; }
