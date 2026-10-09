@@ -56,12 +56,6 @@ jobs:
           printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-      - name: Prepare LuCI feed
-        run: |
-          set -eu
-          cd "$SDK_DIR"
-          ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base
       - name: Prepare theme package
         run: |
           set -eu
@@ -73,9 +67,8 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=8$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q 'DEPENDS:=+luci-base' package/luci-theme-cowboy-bebop/Makefile
-          test -d package/feeds/luci/luci-base
+          grep -q '^PKG_RELEASE:=9$' package/luci-theme-cowboy-bebop/Makefile
+          ! grep -q '^  DEPENDS:=' package/luci-theme-cowboy-bebop/Makefile
       - name: Build theme package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -147,12 +140,6 @@ jobs:
           make defconfig
           grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
           grep -q "^CONFIG_TARGET_ARCH_PACKAGES=\"${KT708_ARCH}\"$" .config
-      - name: Prepare LuCI feed
-        run: |
-          set -eu
-          cd "$SDK_DIR"
-          ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base
       - name: Prepare theme package
         run: |
           set -eu
@@ -164,9 +151,8 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=8$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q 'DEPENDS:=+luci-base' package/luci-theme-cowboy-bebop/Makefile
-          test -d package/feeds/luci/luci-base
+          grep -q '^PKG_RELEASE:=9$' package/luci-theme-cowboy-bebop/Makefile
+          ! grep -q '^  DEPENDS:=' package/luci-theme-cowboy-bebop/Makefile
       - name: Build theme package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
