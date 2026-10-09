@@ -1,4 +1,4 @@
-@media screen and (max-device-width: 600px) {
+@media screen and (max-width: 600px) {
   .cb-sidebar { width: 270px; }
   .cb-sidebar nav { padding: 12px 10px; }
   #topmenu { width: 100%; overflow: visible; }
