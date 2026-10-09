@@ -12,7 +12,7 @@ grep -q 'does not activate itself' "$ROOT/Makefile" || fail "theme must remain o
 grep -q 'themes.CowboyBebop=/luci-static/cowboy-bebop' "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" || fail "optional theme registration missing"
 JS="$ROOT/../luci-app-cowboy-bebop/htdocs/luci-static/resources/view/cowboy-bebop/overview.js"
 [ -f "$JS" ] || fail "manager overview missing"
-for feature in "Connection profile" "Save & Apply" "ON / Start" "OFF / Stop" "Logs and diagnostics" "Run recovery" "Confirm configuration"; do grep -q "$feature" "$JS" || fail "missing UI feature: $feature"; done
+for feature in "Connection profile" "Save & Apply" "ON / Start" "OFF / Stop" "Recent logs" "Run recovery" "Confirm configuration"; do grep -q "$feature" "$JS" || fail "missing UI feature: $feature"; done
 CSS="$ROOT/../luci-app-cowboy-bebop/htdocs/luci-static/resources/view/cowboy-bebop/overview.css"
 [ -f "$CSS" ] || fail "manager-scoped CSS missing"
 grep -q 'cb-manager-page' "$CSS" || fail "styles are not scoped to manager page"
