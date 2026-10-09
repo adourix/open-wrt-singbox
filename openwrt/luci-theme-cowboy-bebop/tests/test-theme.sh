@@ -17,7 +17,7 @@ pass() { echo "TEST PASS: $*"; }
 [ -f "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" ] || fail "theme activation script is missing"
 pass "all theme files exist"
 
-grep -q '^PKG_RELEASE:=7$' "$ROOT/Makefile" || fail "expected theme release 7"
+grep -q '^PKG_RELEASE:=8$' "$ROOT/Makefile" || fail "expected theme release 8"
 grep -q 'DEPENDS:=+luci-base' "$ROOT/Makefile" || fail "luci-base dependency missing"
 pass "package metadata is correct"
 
@@ -33,6 +33,7 @@ LOGO="$ROOT/htdocs/luci-static/cowboy-bebop/logo.svg"
 ! grep -q 'OpenWrt' "$FOOTER" || fail "footer must not expose OpenWrt branding"
 ! grep -q 'OpenWrt' "$AUTH" || fail "login page must not expose OpenWrt branding"
 ! grep -qi 'online' "$HEADER" || fail "status/online chrome must not be present in header"
+! grep -qi 'online' "$FOOTER" || fail "status/online chrome must not be present in footer"
 grep -q 'COWBOY BEBOP' "$HEADER" || fail "Cowboy Bebop header branding missing"
 grep -q 'COWBOY BEBOP MANAGER' "$AUTH" || fail "Cowboy Bebop login branding missing"
 grep -q 'aria-label="Cowboy Bebop"' "$LOGO" || fail "new Cowboy Bebop logo is missing"
