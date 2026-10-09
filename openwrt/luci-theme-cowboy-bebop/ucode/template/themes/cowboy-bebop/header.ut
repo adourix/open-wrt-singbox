@@ -22,14 +22,14 @@
 <body class="{{ blank_page ? 'cb-auth' : ('lang_' + dispatcher.lang + ' ' + entityencode(striptags(node?.title ?? ''), true)) }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
 {% if (!blank_page): %}
 <aside class="cb-sidebar" id="cb-sidebar">
-	<a class="cb-brand" href="{{ dispatcher.build_url('admin/status/overview') }}" aria-label="Control Center home">
-		<img src="{{ media }}/logo.svg" alt="" width="24" height="24"><span class="cb-brand-copy">COWBOY BEBOP<small>NETWORK CONTROL</small></span>
+	<a class="cb-brand" href="{{ dispatcher.build_url('admin/cowboy-bebop') }}" aria-label="Cowboy Bebop home">
+		<img src="{{ media }}/logo.svg" alt="" width="28" height="28"><span class="cb-brand-copy">COWBOY BEBOP<small>ROUTER CONTROL</small></span>
 	</a>
 	<nav aria-label="Main navigation"><ul class="nav" id="topmenu"></ul></nav>
 	<div class="cb-sidebar-footer">OpenWrt LuCI · Network Control</div>
 </aside>
 <header class="cb-topbar">
-	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><img src="{{ media }}/logo.svg" alt="" width="22" height="22"><span>COWBOY BEBOP</span></div>
+	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><img src="{{ media }}/logo.svg" alt="" width="24" height="24"><span>COWBOY BEBOP</span></div>
 	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
 </header>
 <main id="maincontent" class="container">
