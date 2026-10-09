@@ -133,16 +133,11 @@ return baseclass.extend({
 		for (var i = 0; i < rows.length; i++) {
 			var cells = rows[i].querySelectorAll('td');
 			if (cells.length < 2) continue;
-
 			var valueCell = cells[cells.length - 1];
-			if (valueCell.querySelector('.cbi-progressbar, .cbi-progressbar > div, svg, canvas, img'))
-				return true;
-
+			if (valueCell.querySelector('.cbi-progressbar, .cbi-progressbar > div, svg, canvas, img')) return true;
 			var text = (valueCell.textContent || '').replace(/\s+/g, ' ').trim();
-			if (text && text !== '?')
-				return true;
+			if (text && text !== '?') return true;
 		}
-
 		return false;
 	},
 
@@ -155,16 +150,12 @@ return baseclass.extend({
 			main.querySelectorAll('.cbi-section').forEach(function(section) {
 				var heading = section.querySelector('.cbi-title h3');
 				if (!heading) return;
-
 				var title = (heading.textContent || '').replace(/^(Hide|Show)\s*/i, '').trim().toLowerCase();
 				if (!/^(memory|storage|port status)$/.test(title)) return;
-
 				if (!section.querySelector('table')) return;
-
-				if (!this.statusSectionHasData(section))
-					section.classList.add('cb-status-empty');
-				else
-					section.classList.remove('cb-status-empty');
+				var empty = !this.statusSectionHasData(section);
+				section.classList.toggle('cb-status-empty', empty);
+				section.style.display = empty ? 'none' : '';
 			}, this);
 		};
 
