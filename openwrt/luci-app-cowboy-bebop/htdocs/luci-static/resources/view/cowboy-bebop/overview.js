@@ -194,8 +194,7 @@ return view.extend({
 		var header = E('header', { class: 'cowboy-bebop-header' }, [
 			E('div', { class: 'cowboy-bebop-header-main' }, [
 				E('div', {}, [
-					E('div', { class: 'cowboy-bebop-brand' }, [_('COWBOY BEBOP MANAGER')]),
-					E('div', { class: 'cowboy-bebop-subtitle' }, [_('Lightweight sing-box controller for OpenWrt')])
+					E('div', { class: 'cowboy-bebop-brand' }, [_('COWBOY BEBOP MANAGER')])
 				]),
 				headerState
 			])
