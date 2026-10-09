@@ -4,30 +4,51 @@
 
 return baseclass.extend({
 	__init__: function() {
-		ui.menu.load().then(L.bind(this.render, this));
+		ui.menu.load().then(L.bind(this.render, this)).catch(L.bind(this.renderError, this));
 	},
 
 	render: function(tree) {
 		var nav = document.querySelector('#topmenu');
 		if (!nav) return;
+
 		nav.innerHTML = '';
 		this.renderLevel(tree, nav, '', 0);
 		this.bindToggles(nav);
 		this.bindMobileSidebar();
 	},
 
+	renderError: function(err) {
+		var nav = document.querySelector('#topmenu');
+		if (!nav) return;
+
+		nav.innerHTML = '';
+		nav.appendChild(E('li', { 'class': 'cb-nav-error' }, [
+			E('span', { 'class': 'cb-nav-icon', 'aria-hidden': 'true' }, ['!']),
+			E('span', { 'class': 'cb-nav-label' }, [_('Menu unavailable')])
+		]));
+		L.error(err);
+	},
+
 	trailingSlash: function(url) {
 		return url ? url.replace(/\/+$/, '') : '';
 	},
 
+	isActive: function(name, depth) {
+		var path = L.env.requestpath || L.env.dispatchpath || [];
+		return path.length > depth && path[depth] === name;
+	},
+
 	renderLevel: function(tree, container, url, depth) {
 		var children = ui.menu.getChildren(tree);
+
 		children.forEach(function(child) {
 			var childUrl = url + '/' + child.name;
-			var nested = depth < 1 ? ui.menu.getChildren(child) : [];
+			var nested = ui.menu.getChildren(child);
 			var hasChildren = nested.length > 0;
-			var active = L.env.requestpath.length && child.name === L.env.requestpath[depth];
-			var li = E('li', { 'class': (hasChildren ? 'cb-nav-group ' : '') + (active ? 'active' : '') });
+			var active = this.isActive(child.name, depth);
+			var li = E('li', {
+				'class': (hasChildren ? 'cb-nav-group ' : '') + (active ? 'active' : '')
+			});
 
 			if (hasChildren) {
 				var toggle = E('button', {
@@ -42,7 +63,7 @@ return baseclass.extend({
 				li.appendChild(toggle);
 
 				var submenu = E('ul', {
-					'class': 'cb-nav-submenu',
+					'class': 'cb-nav-submenu cb-nav-level-' + (depth + 1),
 					'hidden': !active
 				});
 				this.renderLevel(child, submenu, childUrl, depth + 1);
@@ -57,6 +78,7 @@ return baseclass.extend({
 					E('span', { 'class': 'cb-nav-label' }, [_(child.title)])
 				]));
 			}
+
 			container.appendChild(li);
 		}, this);
 	},
@@ -76,10 +98,12 @@ return baseclass.extend({
 	bindMobileSidebar: function() {
 		var button = document.querySelector('.cb-sidebar-toggle');
 		if (!button) return;
+
 		button.addEventListener('click', function() {
 			var open = document.body.classList.toggle('cb-sidebar-open');
 			button.setAttribute('aria-expanded', open ? 'true' : 'false');
 		});
+
 		document.querySelectorAll('#topmenu a').forEach(function(link) {
 			link.addEventListener('click', function() {
 				document.body.classList.remove('cb-sidebar-open');
