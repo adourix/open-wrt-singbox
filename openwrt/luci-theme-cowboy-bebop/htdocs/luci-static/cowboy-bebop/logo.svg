@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#111925"/><path d="M24 25h48v10H35v9h28v9H35v8h37v10H24z" fill="#d6a15d"/><path d="M48 19v58" stroke="#edf2f7" stroke-width="3" opacity=".22"/><circle cx="72" cy="24" r="4" fill="#62c58a"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Cowboy Bebop">
+  <rect width="96" height="96" rx="22" fill="#111925"/>
+  <path d="M27 24h27c11 0 18 6 18 15 0 5-2 9-6 12 5 3 8 7 8 13 0 10-8 17-20 17H27V24zm12 10v14h14c5 0 8-3 8-7s-3-7-8-7H39zm0 24v13h15c5 0 8-3 8-7s-3-6-8-6H39z" fill="#d6a15d"/>
+  <circle cx="72" cy="23" r="4" fill="#62c58a"/>
+</svg>
