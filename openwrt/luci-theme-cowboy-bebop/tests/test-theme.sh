@@ -2,7 +2,6 @@
 set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-
 fail() { echo "TEST FAIL: $*" >&2; exit 1; }
 pass() { echo "TEST PASS: $*"; }
 
@@ -34,9 +33,10 @@ LOGO="$ROOT/htdocs/luci-static/cowboy-bebop/logo.svg"
 ! grep -q 'OpenWrt' "$AUTH" || fail "login page must not expose OpenWrt branding"
 ! grep -qi 'online' "$HEADER" || fail "status/online chrome must not be present in header"
 ! grep -qi 'online' "$FOOTER" || fail "status/online chrome must not be present in footer"
+! grep -q 'cb-brand.*<img' "$HEADER" || fail "legacy left logo image must not be present"
 grep -q 'COWBOY BEBOP' "$HEADER" || fail "Cowboy Bebop header branding missing"
 grep -q 'COWBOY BEBOP MANAGER' "$AUTH" || fail "Cowboy Bebop login branding missing"
-grep -q 'aria-label="Cowboy Bebop"' "$LOGO" || fail "new Cowboy Bebop logo is missing"
+grep -q 'aria-label="Cowboy Bebop"' "$LOGO" || fail "Cowboy Bebop logo asset is missing"
 ! grep -q 'M24 25h48v10H35' "$LOGO" || fail "old E logo is still present"
 for number in '+20175555667' '+20 1009823007'; do
   grep -q "$number" "$HEADER" || fail "support number missing from header: $number"
@@ -45,23 +45,26 @@ for number in '+20175555667' '+20 1009823007'; do
 done
 pass "private branding, logo and support numbers are preserved"
 
-grep -q -- '--cb-bg: #eef1f5' "$CSS" || fail "mixed light workspace palette missing"
-grep -q -- '--cb-surface: #ffffff' "$CSS" || fail "white surface palette missing"
-grep -q -- '--cb-sidebar: #111318' "$CSS" || fail "dark navigation palette missing"
-grep -q -- '--cb-accent: #d6a15d' "$CSS" || fail "Cowboy Bebop accent palette missing"
+grep -q -- '--cb-bg:#f2f4f7' "$CSS" || fail "workspace palette missing"
+grep -q -- '--cb-surface:#fff' "$CSS" || fail "surface palette missing"
+grep -q -- '--cb-sidebar:#0d1420' "$CSS" || fail "graphite navigation palette missing"
+grep -q -- '--cb-primary:#2563eb' "$CSS" || fail "blue primary palette missing"
+grep -q -- '--cb-accent:#e0a354' "$CSS" || fail "accent palette missing"
 grep -q 'cb-empty-value' "$CSS" || fail "empty-value presentation rule missing"
-pass "mixed light/dark visual system and empty-data handling are present"
+pass "cohesive network UI palette and empty-data handling are present"
 
 grep -q "ui\.menu\.load()" "$MENU" || fail "native LuCI menu loader missing"
 grep -q "ui\.menu\.getChildren(child)" "$MENU" || fail "menu recursion is missing"
 grep -q "this\.renderLevel(child, submenu" "$MENU" || fail "nested native menu rendering is missing"
 grep -q "cb-nav-group-heading" "$MENU" || fail "permanently expanded navigation headings are missing"
+grep -q "L\.url(url, child\.name)" "$MENU" || fail "native LuCI URL generation is missing"
+grep -q "renderTabs" "$MENU" || fail "native tab rendering is missing"
 grep -q "enhanceContent" "$MENU" || fail "content presentation enhancer is missing"
 grep -q "cb-empty-value" "$MENU" || fail "empty native values are not filtered"
 ! grep -q "cb-nav-chevron" "$MENU" || fail "dropdown chevrons must not be present"
 ! grep -q "cb-nav-group-toggle" "$MENU" || fail "dropdown group toggles must not be present"
 grep -q "Menu unavailable" "$MENU" || fail "menu failure fallback is missing"
-pass "native LuCI navigation is preserved and permanently expanded"
+pass "native LuCI navigation and tabs are preserved and permanently expanded"
 
 grep -q 'themes\.CowboyBebop /luci-static/cowboy-bebop' "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" || fail "theme registration missing"
 grep -q 'main\.mediaurlbase /luci-static/cowboy-bebop' "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" || fail "theme activation missing"
