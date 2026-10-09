@@ -1,0 +1,45 @@
+{% include('header', { blank_page: true }) %}
+<div class="cb-auth-shell">
+	<section class="cb-auth-card">
+		<div class="cb-auth-brand">
+			<img src="{{ media }}/logo.svg" alt="">
+			<h1>COWBOY BEBOP MANAGER</h1>
+			<p>SECURE CONTROL CENTER</p>
+		</div>
+		{% if (fuser): %}
+		<div class="alert-message error cb-auth-error"><p>{{ _('Invalid username and/or password! Please try again.') }}</p></div>
+		{% elif (auth_message): %}
+		<div class="alert-message cb-auth-error"><p>{{ auth_message }}</p></div>
+		{% endif %}
+		<form method="post">
+			<div class="cbi-map">
+				<div class="cbi-section">
+					<div class="cbi-value">
+						<label class="cbi-value-title">{{ _('Username') }}</label>
+						<div class="cbi-value-field"><input class="cbi-input-text" type="text" name="luci_username" value="{{ entityencode(duser, true) }}" autocomplete="username"></div>
+					</div>
+					<div class="cbi-value">
+						<label class="cbi-value-title">{{ _('Password') }}</label>
+						<div class="cbi-value-field"><input class="cbi-input-text" type="password" name="luci_password" autocomplete="current-password"></div>
+					</div>
+					{% if (auth_fields): %}{% for (let field in auth_fields): %}
+					<div class="cbi-value">
+						<label class="cbi-value-title">{{ _(field.label ?? field.name) }}</label>
+						<div class="cbi-value-field"><input class="cbi-input-text" type="{{ field.type ?? 'text' }}" name="{{ field.name }}" {% if (field.placeholder): %}placeholder="{{ field.placeholder }}"{% endif %} {% if (field.inputmode): %}inputmode="{{ field.inputmode }}"{% endif %} {% if (field.pattern): %}pattern="{{ field.pattern }}"{% endif %} {% if (field.maxlength): %}maxlength="{{ field.maxlength }}"{% endif %} {% if (field.autocomplete): %}autocomplete="{{ field.autocomplete }}"{% endif %} {% if (field.required): %}required{% endif %}></div>
+					</div>
+					{% endfor %}{% endif %}
+					{% if (auth_html): %}<div class="cbi-value"><div class="cbi-value-field">{{ auth_html }}</div></div>{% endif %}
+					{% if (auth_assets): %}{% for (let asset in auth_assets): %}{% if (asset.type == 'script'): %}<script src="{{ asset.src }}"></script>{% endif %}{% endfor %}{% endif %}
+				</div>
+			</div>
+			<div class="cbi-page-actions"><input type="submit" value="{{ _('Log in') }}" class="btn cbi-button cbi-button-apply"></div>
+		</form>
+		<div class="cb-auth-support">Support: +20175555667 &nbsp;|&nbsp; +20 1009823007</div>
+	</section>
+</div>
+<script>
+var input = document.getElementsByName('luci_password')[0];
+if (input) input.focus();
+</script>
+</body>
+</html>
