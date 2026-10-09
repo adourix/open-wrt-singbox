@@ -11,6 +11,7 @@
 	</div>
 </footer>
 <script>L.require('menu-cowboy-bebop')</script>
+<script>L.require('dashboard-fix')</script>
 {% endif %}
 </body>
 </html>
