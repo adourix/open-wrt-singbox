@@ -91,10 +91,24 @@ jobs:
           mkdir -p artifacts
           find "$SDK_DIR/bin/packages" -type f -name 'cowboy-bebop-branding-*.apk' -exec cp {} artifacts/ \;
           test -n "$(find artifacts -type f -name 'cowboy-bebop-branding-*.apk' -print -quit)"
+      - name: Sign APK package(s)
+        env:
+          APK_SIGNING_PRIVATE_KEY: ${{ secrets.APK_SIGNING_PRIVATE_KEY }}
+        run: |
+          set -eu
+          test -n "$APK_SIGNING_PRIVATE_KEY"
+          printf '%s\n' "$APK_SIGNING_PRIVATE_KEY" > "$RUNNER_TEMP/apk-signing-key.pem"
+          chmod 600 "$RUNNER_TEMP/apk-signing-key.pem"
+          for apk in artifacts/cowboy-bebop-branding-*.apk; do
+            [ -f "$apk" ] || continue
+            openssl dgst -sha256 -sign "$RUNNER_TEMP/apk-signing-key.pem" -out "$apk.sig" "$apk"
+          done
+          test -n "$(find artifacts -maxdepth 1 -type f -name 'cowboy-bebop-branding-*.apk.sig' -print -quit)"
+          rm -f "$RUNNER_TEMP/apk-signing-key.pem"
       - uses: actions/upload-artifact@v4
         with:
           name: cowboy-bebop-branding-${{ env.OPENWRT_VERSION }}-x86-64
-          path: artifacts/*.apk
+          path: artifacts/*.apk*
           if-no-files-found: error
 
   build-kt708:
@@ -169,8 +183,22 @@ jobs:
           mkdir -p artifacts-kt708
           find "$SDK_DIR/bin/packages" -type f -name 'cowboy-bebop-branding-*.apk' -exec cp {} artifacts-kt708/ \;
           test -n "$(find artifacts-kt708 -type f -name 'cowboy-bebop-branding-*.apk' -print -quit)"
+      - name: Sign APK package(s)
+        env:
+          APK_SIGNING_PRIVATE_KEY: ${{ secrets.APK_SIGNING_PRIVATE_KEY }}
+        run: |
+          set -eu
+          test -n "$APK_SIGNING_PRIVATE_KEY"
+          printf '%s\n' "$APK_SIGNING_PRIVATE_KEY" > "$RUNNER_TEMP/apk-signing-key.pem"
+          chmod 600 "$RUNNER_TEMP/apk-signing-key.pem"
+          for apk in artifacts-kt708/cowboy-bebop-branding-*.apk; do
+            [ -f "$apk" ] || continue
+            openssl dgst -sha256 -sign "$RUNNER_TEMP/apk-signing-key.pem" -out "$apk.sig" "$apk"
+          done
+          test -n "$(find artifacts-kt708 -maxdepth 1 -type f -name 'cowboy-bebop-branding-*.apk.sig' -print -quit)"
+          rm -f "$RUNNER_TEMP/apk-signing-key.pem"
       - uses: actions/upload-artifact@v4
         with:
           name: cowboy-bebop-branding-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-${{ env.KT708_ARCH }}
-          path: artifacts-kt708/*.apk
+          path: artifacts-kt708/*.apk*
           if-no-files-found: error
