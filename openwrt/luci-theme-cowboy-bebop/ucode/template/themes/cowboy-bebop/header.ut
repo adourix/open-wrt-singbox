@@ -18,17 +18,22 @@
 	<link rel="icon" href="{{ media }}/logo.svg" type="image/svg+xml">
 	<style>
 		@media (min-width: 901px) {
-			:root { --cb-sidebar-width: 212px; --cb-topbar-height: 64px; }
-			.cb-sidebar { width: 212px; }
-			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 212px; }
-			.cb-brand { width: 212px; padding-left: 16px; padding-right: 16px; }
+			:root { --cb-sidebar-width: 260px; --cb-topbar-height: 64px; }
+			.cb-sidebar { width: 260px; }
+			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 260px; }
+			.cb-brand { width: 260px; padding-left: 20px; padding-right: 20px; }
 			.cb-sidebar .cb-brand-copy, .cb-sidebar .cb-nav-label, .cb-sidebar .cb-sidebar-footer { opacity: 1; display: block; }
-			.cb-sidebar .cb-nav-group-heading, .cb-sidebar .cb-nav-link { justify-content: flex-start; padding-left: 10px; padding-right: 10px; }
+			.cb-sidebar .cb-nav-group-heading, .cb-sidebar .cb-nav-link { justify-content: flex-start; padding-left: 12px; padding-right: 12px; }
 			.cb-sidebar .cb-nav-submenu { display: none; }
 			.cb-sidebar .cb-nav-group.open > .cb-nav-submenu { display: block; }
 			.cb-sidebar > nav > ul > li.active > .cb-nav-link { background: #1c2a3d; color: #fff; }
-			.cb-sidebar > nav > ul > li.active > .cb-nav-link::before { content: ""; width: 2px; height: 20px; margin-left: -10px; background: #3b82f6; border-radius: 2px; }
+			.cb-sidebar > nav > ul > li.active > .cb-nav-link::before { content: ""; width: 2px; height: 20px; margin-left: -12px; background: #3b82f6; border-radius: 2px; }
+			.cb-topbar { padding-left: 22px; }
+			.cb-page-title { margin-left: 0; }
 		}
+		.cb-brand img, .cb-mobile-brand img { display: none !important; }
+		.cb-brand { gap: 0; }
+		.cb-nav-chevron { display: none !important; }
 	</style>
 	{% if (node?.css): %}<link rel="stylesheet" href="{{ resource }}/{{ node.css }}">{% endif %}
 	{% if (css): %}<style>{{ css }}</style>{% endif %}
@@ -39,13 +44,13 @@
 {% if (!blank_page): %}
 <aside class="cb-sidebar" id="cb-sidebar">
 	<a class="cb-brand" href="{{ dispatcher.build_url('admin/cowboy-bebop') }}" aria-label="Cowboy Bebop home">
-		<img src="{{ media }}/logo.svg" alt="" width="28" height="28"><span class="cb-brand-copy">COWBOY BEBOP<small>ROUTER CONTROL</small></span>
+		<span class="cb-brand-copy">COWBOY BEBOP<small>ROUTER CONTROL</small></span>
 	</a>
 	<nav aria-label="Main navigation"><ul class="nav" id="topmenu"></ul></nav>
 	<div class="cb-sidebar-footer">OpenWrt LuCI · Network Control</div>
 </aside>
 <header class="cb-topbar">
-	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><img src="{{ media }}/logo.svg" alt="" width="24" height="24"><span>COWBOY BEBOP</span></div>
+	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><span>COWBOY BEBOP</span></div>
 	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
 </header>
 <main id="maincontent" class="container">
