@@ -7,14 +7,41 @@ if [ "$(uci -q get system.@system[0].hostname 2>/dev/null)" = "OpenWrt" ] || \
 	uci commit system
 fi
 
-# Only change descriptive fields; keep DISTRIB_ID, VERSION_ID and target IDs intact.
+# Read the installed OpenWrt release dynamically; never hard-code a version.
 _cb_version=''
 if [ -f /etc/openwrt_release ]; then
-	_cb_version="$(awk -F= '$1 == \"DISTRIB_RELEASE\" { gsub(/\"/, \"\", $2); print $2 }' /etc/openwrt_release 2>/dev/null)"
-	if [ -n "$_cb_version" ]; then
+	_cb_version="$(awk -F= '$1 == "DISTRIB_RELEASE" { gsub(/"/, "", $2); print $2 }' /etc/openwrt_release 2>/dev/null)"
+fi
+[ -n "$_cb_version" ] || _cb_version='unknown'
+
+# Generate /etc/banner here instead of packaging it, because /etc/banner is
+# owned by base-files. This avoids an APK file ownership conflict.
+cat > /etc/banner <<EOF
+*   .   .         '           '     *         *   +   *
+ '              .        *                     .
+      '   /\\                C  O  W  B  O  Y                 .
+         /  \\     *      ____   _____  ____    ___   ____
+        | () |          | __ ) | ____|| __ )  / _ \\ |  _ \\
+ '   .  |    |       '  |  _ \\ |  _|  |  _ \\ | | | || |_) |   .
+        |    |   .      | |_) || |___ | |_) || |_| ||  __/
+   +   /| /\\ |\\         |____/ |_____||____/  \\___/ |_|
+      / |/  \\| \\    *                                          *
+     /__|____|__\\          - r i d e   t h e   s i g n a l -
+        /_||_\\
+         \\||/             based on OpenWrt $_cb_version  .   *
+.         \\/           '  Session ready.
+       .            .     Try: cowboy-bebop-manager status     +
+  .             .                                           *
+
+  Support: +20175555667 | +20 1009823007
+EOF
+
+# Only change descriptive fields; keep DISTRIB_ID, VERSION_ID and target IDs intact.
+if [ -f /etc/openwrt_release ]; then
+	if grep -q '^DISTRIB_DESCRIPTION=' /etc/openwrt_release; then
 		sed -i "s/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION=\"Cowboy Bebop Manager (based on OpenWrt $_cb_version)\"/" /etc/openwrt_release
 	else
-		sed -i 's/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION="Cowboy Bebop Manager (based on OpenWrt)"/' /etc/openwrt_release
+		echo "DISTRIB_DESCRIPTION=\"Cowboy Bebop Manager (based on OpenWrt $_cb_version)\"" >> /etc/openwrt_release
 	fi
 fi
 
@@ -26,7 +53,6 @@ if [ -f /etc/os-release ]; then
 		-e 's|^BUG_REPORT_URL=.*|BUG_REPORT_URL="https://github.com/adourix/open-wrt-singbox/issues"|' \
 		/etc/os-release
 
-	# Support contacts for interactive/system identification.
 	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
 		echo 'SUPPORT_PHONE="+20175555667 +20 1009823007"' >> /etc/os-release
 	else
