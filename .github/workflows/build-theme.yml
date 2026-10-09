@@ -73,7 +73,7 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=6$' package/luci-theme-cowboy-bebop/Makefile
+          grep -q '^PKG_RELEASE:=7$' package/luci-theme-cowboy-bebop/Makefile
           grep -q 'DEPENDS:=+luci-base' package/luci-theme-cowboy-bebop/Makefile
           test -d package/feeds/luci/luci-base
       - name: Build theme package
@@ -164,7 +164,7 @@ jobs:
           cd "$SDK_DIR"
           make defconfig
           grep -q '^PKG_NAME:=luci-theme-cowboy-bebop$' package/luci-theme-cowboy-bebop/Makefile
-          grep -q '^PKG_RELEASE:=6$' package/luci-theme-cowboy-bebop/Makefile
+          grep -q '^PKG_RELEASE:=7$' package/luci-theme-cowboy-bebop/Makefile
           grep -q 'DEPENDS:=+luci-base' package/luci-theme-cowboy-bebop/Makefile
           test -d package/feeds/luci/luci-base
       - name: Build theme package
