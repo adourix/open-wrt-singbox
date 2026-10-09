@@ -38,6 +38,7 @@ define Package/luci-theme-cowboy-bebop/install
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/reference.css $(1)/www/luci-static/cowboy-bebop/reference.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/mobile.css $(1)/www/luci-static/cowboy-bebop/mobile.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/sidebar.css $(1)/www/luci-static/cowboy-bebop/sidebar.css
+	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/navigation-fix.css $(1)/www/luci-static/cowboy-bebop/navigation-fix.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/logo.svg $(1)/www/luci-static/cowboy-bebop/logo.svg
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/actions-fix.css $(1)/www/luci-static/cowboy-bebop/actions-fix.css
 	$(INSTALL_DIR) $(1)/www/luci-static/resources
