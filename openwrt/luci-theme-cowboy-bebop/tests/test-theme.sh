@@ -18,7 +18,7 @@ for asset in \
 	[ -f "$ROOT/$asset" ] || fail "missing theme asset: $asset"
 done
 
-grep -q '^PKG_RELEASE:=14$' "$ROOT/Makefile" || fail "theme release is stale"
+grep -q '^PKG_RELEASE:=15$' "$ROOT/Makefile" || fail "theme release is stale"
 grep -q 'Full LuCI visual theme' "$ROOT/Makefile" || fail "theme must be a full LuCI theme"
 for asset in reference.css sidebar.css navigation-fix.css actions-fix.css controls-fix.css dashboard-fix.css; do
 	grep -q "$asset" "$ROOT/Makefile" || fail "$asset must be packaged"
@@ -30,6 +30,8 @@ HEADER="$ROOT/ucode/template/themes/cowboy-bebop/header.ut"
 for asset in reference.css sidebar.css navigation-fix.css actions-fix.css controls-fix.css dashboard-fix.css; do
 	grep -q "$asset" "$HEADER" || fail "$asset must load in theme header"
 done
+
+grep -q 'max-width: 854px' "$HEADER" || fail "mobile stylesheet must use viewport width"
 
 MENU="$ROOT/htdocs/luci-static/resources/menu-cowboy-bebop.js"
 grep -q 'cb-nav-section-heading' "$MENU" || fail "collapsible section heading missing"
