@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=12
+PKG_RELEASE:=13
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -39,10 +39,12 @@ define Package/luci-theme-cowboy-bebop/install
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/mobile.css $(1)/www/luci-static/cowboy-bebop/mobile.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/sidebar.css $(1)/www/luci-static/cowboy-bebop/sidebar.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/navigation-fix.css $(1)/www/luci-static/cowboy-bebop/navigation-fix.css
+	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/dashboard-fix.css $(1)/www/luci-static/cowboy-bebop/dashboard-fix.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/logo.svg $(1)/www/luci-static/cowboy-bebop/logo.svg
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/actions-fix.css $(1)/www/luci-static/cowboy-bebop/actions-fix.css
 	$(INSTALL_DIR) $(1)/www/luci-static/resources
 	$(INSTALL_DATA) ./htdocs/luci-static/resources/menu-cowboy-bebop.js $(1)/www/luci-static/resources/menu-cowboy-bebop.js
+	$(INSTALL_DATA) ./htdocs/luci-static/resources/dashboard-fix.js $(1)/www/luci-static/resources/dashboard-fix.js
 	$(INSTALL_DIR) $(1)/usr/share/ucode/luci/template/themes/cowboy-bebop
 	$(INSTALL_DATA) ./ucode/template/themes/cowboy-bebop/header.ut $(1)/usr/share/ucode/luci/template/themes/cowboy-bebop/header.ut
 	$(INSTALL_DATA) ./ucode/template/themes/cowboy-bebop/footer.ut $(1)/usr/share/ucode/luci/template/themes/cowboy-bebop/footer.ut
