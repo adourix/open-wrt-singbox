@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-branding
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=../../LICENSE
 PKG_MAINTAINER:=Abdulrahman Ayad
@@ -18,17 +18,15 @@ endef
 
 define Package/cowboy-bebop-branding/description
 Optional, lightweight system identity for Cowboy Bebop Manager on OpenWrt.
-Adds an SSH banner, interactive login status line, descriptive OS release
-metadata and a safe default hostname without changing machine-readable IDs.
+Generates an SSH banner from the installed OpenWrt release metadata, adds an
+interactive login status line, descriptive OS release metadata and a safe
+default hostname without changing machine-readable IDs.
 endef
 
 define Build/Compile
 endef
 
 define Package/cowboy-bebop-branding/install
-	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_DATA) ./files/etc/banner $(1)/etc/banner
-
 	$(INSTALL_DIR) $(1)/etc/profile.d
 	$(INSTALL_BIN) ./files/etc/profile.d/cowboy-bebop.sh $(1)/etc/profile.d/cowboy-bebop.sh
 
