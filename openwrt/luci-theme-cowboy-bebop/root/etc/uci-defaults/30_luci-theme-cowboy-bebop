@@ -4,18 +4,15 @@ changed=0
 set_opt() {
 	local key="$1"
 	local val="$2"
-	if ! uci -q get "luci.$key" >/dev/null 2>&1; then
+	if ! uci -q get "luci.$key" >/dev/null 2>&1 || [ "$(uci -q get "luci.$key" 2>/dev/null)" != "$val" ]; then
 		uci set "luci.$key=$val"
 		changed=1
 	fi
 }
 
+# Register the theme and make it the active LuCI media/template root.
 set_opt themes.CowboyBebop /luci-static/cowboy-bebop
-
-if [ "$PKG_UPGRADE" != 1 ] || ! uci -q get luci.main.mediaurlbase >/dev/null 2>&1; then
-	uci set luci.main.mediaurlbase='/luci-static/cowboy-bebop'
-	changed=1
-fi
+set_opt main.mediaurlbase /luci-static/cowboy-bebop
 
 [ "$changed" = 1 ] && uci commit luci
 rm -f /tmp/luci-indexcache.* /tmp/luci-modulecache/* 2>/dev/null || true
