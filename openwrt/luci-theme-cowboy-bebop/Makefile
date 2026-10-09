@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -12,7 +12,6 @@ define Package/luci-theme-cowboy-bebop
   CATEGORY:=LuCI
   SUBMENU:=4. Themes
   TITLE:=Cowboy Bebop Manager Private Theme
-  DEPENDS:=+luci-base
   PKGARCH:=all
 endef
 
