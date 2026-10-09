@@ -1,0 +1,31 @@
+/* Cowboy Bebop — normalize all LuCI secondary navigation */
+#tabmenu{display:block!important;margin:0 0 18px!important;padding:0!important}
+#tabmenu ul,#tabmenu ol{list-style:none!important;margin:0!important;padding:0!important}
+#tabmenu .cb-tabmenu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px!important;border:1px solid #e4e7ec;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.025)}
+#tabmenu .cb-tabmenu li{margin:0!important;padding:0!important;list-style:none!important}
+#tabmenu .cb-tabmenu li a{display:flex;align-items:center;min-height:34px;padding:7px 13px;border-radius:6px;color:#667085;background:transparent;text-decoration:none;font-size:12px;font-weight:600;white-space:nowrap}
+#tabmenu .cb-tabmenu li a:hover{background:#f3f6fa;color:#17202b}
+#tabmenu .cb-tabmenu li.cbi-tab a,#tabmenu .cb-tabmenu li.active a{background:#eef4ff;color:#2563eb;font-weight:700}
+
+/* Cover legacy LuCI tab/menu markup so it never falls back to browser bullets */
+.cbi-tabmenu,.tabs,.tabmenu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;list-style:none!important;margin:0 0 18px!important;padding:4px!important;border:1px solid #e4e7ec;border-radius:8px;background:#fff}
+.cbi-tabmenu li,.tabs li,.tabmenu li{list-style:none!important;margin:0!important;padding:0!important}
+.cbi-tabmenu a,.tabs a,.tabmenu a{display:block;padding:7px 13px;border-radius:6px;color:#667085;text-decoration:none;font-size:12px;font-weight:600}
+.cbi-tabmenu a:hover,.tabs a:hover,.tabmenu a:hover{background:#f3f6fa;color:#17202b}
+.cbi-tabmenu .cbi-tab a,.tabs .active a,.tabmenu .active a{background:#eef4ff;color:#2563eb;font-weight:700}
+
+/* LuCI content lists should look intentional, not like raw browser HTML */
+#maincontent .cbi-map > ul,#maincontent .cbi-section > ul,#maincontent .cbi-map > ol,#maincontent .cbi-section > ol{margin:10px 0;padding-left:22px;color:#475467}
+#maincontent .cbi-map > ul > li,#maincontent .cbi-section > ul > li,#maincontent .cbi-map > ol > li,#maincontent .cbi-section > ol > li{margin:5px 0;padding-left:3px}
+#maincontent .cbi-map > ul a,#maincontent .cbi-section > ul a{color:#2563eb;text-decoration:none}
+#maincontent .cbi-map > ul a:hover,#maincontent .cbi-section > ul a:hover{text-decoration:underline}
+
+/* Legacy breadcrumb/menu lists */
+#maincontent .breadcrumb,#maincontent .breadcrumb li{list-style:none!important;margin:0;padding:0}
+#maincontent .breadcrumb{display:flex;gap:6px;flex-wrap:wrap}
+#maincontent .breadcrumb li a{display:block;padding:6px 10px;border-radius:5px;background:#f3f5f7;color:#475467;text-decoration:none}
+
+@media(max-width:600px){
+ #tabmenu .cb-tabmenu,.cbi-tabmenu,.tabs,.tabmenu{overflow-x:auto;flex-wrap:nowrap}
+ #tabmenu .cb-tabmenu li a,.cbi-tabmenu a,.tabs a,.tabmenu a{white-space:nowrap}
+}
