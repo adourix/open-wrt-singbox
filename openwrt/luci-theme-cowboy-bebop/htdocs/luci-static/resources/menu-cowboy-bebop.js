@@ -13,9 +13,10 @@ return baseclass.extend({
 		nav.innerHTML = '';
 		this.renderLevel(tree, nav, '', 0);
 		this.bindToggles(nav);
+		this.bindMobileSidebar();
 	},
 
-	railingSlash: function(url) {
+	trailingSlash: function(url) {
 		return url ? url.replace(/\/+$/, '') : '';
 	},
 
@@ -68,6 +69,21 @@ return baseclass.extend({
 				var expanded = toggle.getAttribute('aria-expanded') === 'true';
 				toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
 				if (submenu) submenu.hidden = expanded;
+			});
+		});
+	},
+
+	bindMobileSidebar: function() {
+		var button = document.querySelector('.cb-sidebar-toggle');
+		if (!button) return;
+		button.addEventListener('click', function() {
+			var open = document.body.classList.toggle('cb-sidebar-open');
+			button.setAttribute('aria-expanded', open ? 'true' : 'false');
+		});
+		document.querySelectorAll('#topmenu a').forEach(function(link) {
+			link.addEventListener('click', function() {
+				document.body.classList.remove('cb-sidebar-open');
+				button.setAttribute('aria-expanded', 'false');
 			});
 		});
 	},
