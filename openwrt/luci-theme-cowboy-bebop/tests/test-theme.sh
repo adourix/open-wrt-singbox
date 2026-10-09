@@ -18,7 +18,7 @@ for asset in \
 	[ -f "$ROOT/$asset" ] || fail "missing theme asset: $asset"
 done
 
-grep -q '^PKG_RELEASE:=15$' "$ROOT/Makefile" || fail "theme release is stale"
+grep -q '^PKG_RELEASE:=16$' "$ROOT/Makefile" || fail "theme release is stale"
 grep -q 'Full LuCI visual theme' "$ROOT/Makefile" || fail "theme must be a full LuCI theme"
 for asset in reference.css sidebar.css navigation-fix.css actions-fix.css controls-fix.css dashboard-fix.css; do
 	grep -q "$asset" "$ROOT/Makefile" || fail "$asset must be packaged"
@@ -38,9 +38,13 @@ grep -q 'cb-nav-section-heading' "$MENU" || fail "collapsible section heading mi
 grep -q 'closeSiblingGroups' "$MENU" || fail "sidebar accordion behavior missing"
 grep -q 'bindMobileSidebar' "$MENU" || fail "mobile sidebar behavior missing"
 
-grep -q 'input\[type="checkbox"\]' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "checkbox normalization missing"
-grep -q 'input\[type="radio"\]' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "radio normalization missing"
-grep -q 'cbi-dropdown\[open\] > ul.dropdown' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "dropdown open state missing"
+CONTROLS="$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css"
+grep -q 'input\[type="checkbox"\]' "$CONTROLS" || fail "checkbox normalization missing"
+grep -q 'input\[type="radio"\]' "$CONTROLS" || fail "radio normalization missing"
+grep -q 'cbi-dropdown > ul {' "$CONTROLS" || fail "collapsed dropdown shell missing"
+grep -q 'cbi-dropdown > ul.dropdown {' "$CONTROLS" || fail "dropdown popup shell missing"
+grep -q 'cbi-dropdown > ul.dropdown > li > form' "$CONTROLS" || fail "dropdown checkbox row layout missing"
+grep -q 'cbi-dropdown > ul.dropdown .ifacebadge' "$CONTROLS" || fail "interface badge normalization missing"
 grep -q 'cbi-page-actions .cbi-dropdown.cbi-button' "$ROOT/htdocs/luci-static/cowboy-bebop/actions-fix.css" || fail "Save & Apply ComboButton normalization missing"
 
 echo "THEME STATIC CHECKS PASSED"
