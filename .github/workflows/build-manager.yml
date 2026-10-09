@@ -50,8 +50,11 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
+          # Update only: this package only copies files (empty Build/Compile).
+          # Installed feed packages would become build dependencies, and the
+          # SDK would compile sing-box-tiny (a long Go build) for nothing.
+          # They stay runtime dependencies that apk resolves on the router.
           ./scripts/feeds update packages
-          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
       - name: Copy package
         run: |
@@ -71,13 +74,27 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-manager-x86_64.log"
-          make package/cowboy-bebop-manager/compile V=s > "$LOG" 2>&1 || { tail -n 120 "$LOG"; exit 1; }
+          build() { make package/cowboy-bebop-manager/compile V=s; }
+          if ! build > "$LOG" 2>&1; then
+            echo "::group::First attempt failed (feeds not installed) - context before the first failure"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
+            echo "::endgroup::"
+            echo "Retrying once with the packages feed installed"
+            ./scripts/feeds install -a
+            if ! build >> "$LOG" 2>&1; then
+              echo "::group::Second attempt failed - end of log"
+              tail -n 150 "$LOG"
+              echo "::endgroup::"
+              exit 1
+            fi
+          fi
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: manager-build-log-x86_64
           path: build-manager-x86_64.log
+          if-no-files-found: ignore
       - name: Collect package
         run: |
           set -eu
@@ -88,6 +105,7 @@ jobs:
         with:
           name: cowboy-bebop-manager-${{ env.OPENWRT_VERSION }}-x86-64
           path: artifacts/*.apk
+          if-no-files-found: error
 
   build-kt708:
     if: inputs.target == 'kt708' || inputs.target == 'both'
@@ -115,6 +133,7 @@ jobs:
           echo "SDK_DIR=$PWD/${KT708_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
       - name: Verify SDK
         run: |
+          set -eu
           cd "$SDK_DIR"
           make defconfig
           grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
@@ -123,8 +142,11 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
+          # Update only: this package only copies files (empty Build/Compile).
+          # Installed feed packages would become build dependencies, and the
+          # SDK would compile sing-box-tiny (a long Go build) for nothing.
+          # They stay runtime dependencies that apk resolves on the router.
           ./scripts/feeds update packages
-          ./scripts/feeds install -a
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
@@ -135,13 +157,27 @@ jobs:
           set -eu
           cd "$SDK_DIR"
           LOG="$GITHUB_WORKSPACE/build-manager-kt708.log"
-          make package/cowboy-bebop-manager/compile V=s > "$LOG" 2>&1 || { tail -n 120 "$LOG"; exit 1; }
+          build() { make package/cowboy-bebop-manager/compile V=s; }
+          if ! build > "$LOG" 2>&1; then
+            echo "::group::First attempt failed (feeds not installed) - context before the first failure"
+            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
+            echo "::endgroup::"
+            echo "Retrying once with the packages feed installed"
+            ./scripts/feeds install -a
+            if ! build >> "$LOG" 2>&1; then
+              echo "::group::Second attempt failed - end of log"
+              tail -n 150 "$LOG"
+              echo "::endgroup::"
+              exit 1
+            fi
+          fi
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: manager-build-log-kt708
           path: build-manager-kt708.log
+          if-no-files-found: ignore
       - name: Collect package
         run: |
           set -eu
@@ -152,3 +188,4 @@ jobs:
         with:
           name: cowboy-bebop-manager-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-${{ env.KT708_ARCH }}
           path: artifacts-kt708/*.apk
+          if-no-files-found: error
