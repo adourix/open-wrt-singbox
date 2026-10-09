@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Cowboy Bebop">
-  <rect width="96" height="96" rx="22" fill="#111925"/>
-  <path d="M27 24h27c11 0 18 6 18 15 0 5-2 9-6 12 5 3 8 7 8 13 0 10-8 17-20 17H27V24zm12 10v14h14c5 0 8-3 8-7s-3-7-8-7H39zm0 24v13h15c5 0 8-3 8-7s-3-6-8-6H39z" fill="#d6a15d"/>
-  <circle cx="72" cy="23" r="4" fill="#62c58a"/>
+  <rect x="8" y="8" width="80" height="80" rx="20" fill="#0d1420"/>
+  <circle cx="48" cy="48" r="22" fill="none" stroke="#e0a354" stroke-width="5"/>
+  <path d="M48 26v44M26 48h44" stroke="#e0a354" stroke-width="3" stroke-linecap="round" opacity=".75"/>
 </svg>
