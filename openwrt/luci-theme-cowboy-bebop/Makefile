@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -23,6 +23,7 @@ endef
 define Package/luci-theme-cowboy-bebop/postinst
 #!/bin/sh
 [ -n "$(IPKG_INSTROOT)" ] || {
+    /etc/uci-defaults/30_luci-theme-cowboy-bebop 2>/dev/null || true
     /etc/init.d/rpcd reload 2>/dev/null || true
     rm -f /tmp/luci-indexcache.* /tmp/luci-modulecache/* 2>/dev/null || true
 }
