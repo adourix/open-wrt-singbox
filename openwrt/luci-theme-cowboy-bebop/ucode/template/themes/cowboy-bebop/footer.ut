@@ -1,0 +1,16 @@
+{% if (!blank_page): %}
+</main>
+<footer>
+	<div>
+		<div class="cb-footer-brand">COWBOY BEBOP MANAGER</div>
+		<div>Private Network Control Interface</div>
+	</div>
+	<div>
+		<div>Support: +20175555667 &nbsp;|&nbsp; +20 1009823007</div>
+		<ul class="breadcrumb" id="modemenu" style="display:none"></ul>
+	</div>
+</footer>
+<script>L.require('menu-cowboy-bebop')</script>
+{% endif %}
+</body>
+</html>
