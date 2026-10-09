@@ -13,7 +13,7 @@ return baseclass.extend({
 
 		nav.innerHTML = '';
 		this.renderLevel(tree, nav, '', 0);
-		this.bindToggles(nav);
+		this.enhanceContent();
 		this.bindMobileSidebar();
 	},
 
@@ -51,20 +51,17 @@ return baseclass.extend({
 			});
 
 			if (hasChildren) {
-				var toggle = E('button', {
-					'class': 'cb-nav-group-toggle',
-					'type': 'button',
-					'aria-expanded': active ? 'true' : 'false'
+				/* Native LuCI hierarchy stays fully expanded; no dropdown navigation. */
+				var heading = E('div', {
+					'class': 'cb-nav-group-heading'
 				}, [
 					E('span', { 'class': 'cb-nav-icon', 'aria-hidden': 'true' }, [this.iconFor(child.name)]),
-					E('span', { 'class': 'cb-nav-label' }, [_(child.title)]),
-					E('span', { 'class': 'cb-nav-chevron', 'aria-hidden': 'true' }, ['›'])
+					E('span', { 'class': 'cb-nav-label' }, [_(child.title)])
 				]);
-				li.appendChild(toggle);
+				li.appendChild(heading);
 
 				var submenu = E('ul', {
-					'class': 'cb-nav-submenu cb-nav-level-' + (depth + 1),
-					'hidden': !active
+					'class': 'cb-nav-submenu cb-nav-level-' + (depth + 1)
 				});
 				this.renderLevel(child, submenu, childUrl, depth + 1);
 				li.appendChild(submenu);
@@ -83,26 +80,51 @@ return baseclass.extend({
 		}, this);
 	},
 
-	bindToggles: function(nav) {
-		nav.querySelectorAll('.cb-nav-group-toggle').forEach(function(toggle) {
-			toggle.addEventListener('click', function() {
-				var group = toggle.parentNode;
-				var submenu = group.querySelector(':scope > .cb-nav-submenu');
-				var expanded = toggle.getAttribute('aria-expanded') === 'true';
-				toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-				if (submenu) submenu.hidden = expanded;
-			});
+	enhanceContent: function() {
+		var headings = document.querySelectorAll('#maincontent h3, #maincontent h2');
+		headings.forEach(function(heading) {
+			var text = (heading.textContent || '').trim().toLowerCase();
+			var icon = '•';
+			if (text.indexOf('system') >= 0) icon = '◉';
+			else if (text.indexOf('memory') >= 0) icon = '▦';
+			else if (text.indexOf('storage') >= 0 || text.indexOf('disk') >= 0) icon = '▤';
+			else if (text.indexOf('network') >= 0) icon = '⌁';
+			else if (text.indexOf('port') >= 0 || text.indexOf('interface') >= 0) icon = '⇄';
+			else if (text.indexOf('service') >= 0) icon = '⚙';
+			else if (text.indexOf('status') >= 0) icon = '✓';
+			heading.setAttribute('data-cb-icon', icon);
 		});
+
+		/* Do not render misleading empty values. Keep rows as soon as LuCI has real data. */
+		var cleanEmpty = function() {
+			document.querySelectorAll('#maincontent .cbi-value').forEach(function(row) {
+				var field = row.querySelector('.cbi-value-field');
+				if (!field) return;
+				var text = (field.textContent || '').replace(/\u00a0/g, ' ').trim();
+				if (!text && !field.querySelector('input, select, textarea, button, img, svg, iframe, canvas'))
+					row.classList.add('cb-empty-value');
+				else
+					row.classList.remove('cb-empty-value');
+			});
+		};
+
+		cleanEmpty();
+		setTimeout(cleanEmpty, 150);
+		setTimeout(cleanEmpty, 600);
+		if (window.MutationObserver) {
+			var target = document.querySelector('#maincontent');
+			if (target) new MutationObserver(cleanEmpty).observe(target, { childList: true, subtree: true });
+		}
 	},
 
 	bindMobileSidebar: function() {
 		var button = document.querySelector('.cb-sidebar-toggle');
 		if (!button) return;
 
-		button.addEventListener('click', function() {
+		button.onclick = function() {
 			var open = document.body.classList.toggle('cb-sidebar-open');
 			button.setAttribute('aria-expanded', open ? 'true' : 'false');
-		});
+		};
 
 		document.querySelectorAll('#topmenu a').forEach(function(link) {
 			link.addEventListener('click', function() {
@@ -114,12 +136,20 @@ return baseclass.extend({
 
 	iconFor: function(name) {
 		var icons = {
-			status: '◉',
+			status: '✓',
 			system: '⚙',
-			services: '▣',
+			services: '▦',
 			network: '⌁',
 			logout: '↪',
-			admin: '⌂'
+			admin: '⌂',
+			interfaces: '⇄',
+			firewall: '◈',
+			dhcp: '⌁',
+			routing: '↗',
+			startup: '▶',
+			software: '▤',
+			backup: '↓',
+			reboot: '↻'
 		};
 		return icons[name] || '•';
 	}
