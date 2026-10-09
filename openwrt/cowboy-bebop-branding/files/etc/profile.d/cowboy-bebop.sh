@@ -23,13 +23,13 @@ fi
 
 if [ -n "${NO_COLOR:-}" ]; then
   printf 'Cowboy Bebop | proxy: %s | TUN: %s | sing-box: %s\n' "$_cb_proxy" "$_cb_tun" "$_cb_version"
-  PS1='\u@\h:\w# '
+  PS1='\u@cowboy-bebop:\w# '
 else
   printf '\033[1;33mCowboy Bebop\033[0m | proxy: %s | TUN: %s | sing-box: %s\n' "$_cb_proxy" "$_cb_tun" "$_cb_version"
   _cb_yellow="$(printf '\033[1;33m')"
   _cb_cyan="$(printf '\033[1;36m')"
   _cb_reset="$(printf '\033[0m')"
-  PS1="${_cb_yellow}\u@\h${_cb_reset}:${_cb_cyan}\w${_cb_reset}# "
+  PS1="${_cb_yellow}\u@cowboy-bebop${_cb_reset}:${_cb_cyan}\w${_cb_reset}# "
   unset _cb_yellow _cb_cyan _cb_reset
 fi
 unset _cb_enabled _cb_tun _cb_proxy _cb_version
