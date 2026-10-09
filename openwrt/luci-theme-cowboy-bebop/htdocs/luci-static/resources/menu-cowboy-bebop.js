@@ -115,6 +115,7 @@ return baseclass.extend({
 			heading.insertBefore(svg, heading.firstChild);
 		}, this);
 		this.polishStatusPanels();
+		this.bindEmptyStatusFallback();
 	},
 
 	polishStatusPanels: function() {
@@ -123,6 +124,59 @@ return baseclass.extend({
 		main.querySelectorAll('.cbi-section-descr, .cbi-map-descr').forEach(function(node) {
 			if (!node.children.length && !(node.textContent || '').trim()) node.style.display = 'none';
 		});
+	},
+
+	statusSectionHasData: function(section) {
+		var rows = section.querySelectorAll('table tr');
+		if (!rows.length) return true;
+
+		for (var i = 0; i < rows.length; i++) {
+			var cells = rows[i].querySelectorAll('td');
+			if (cells.length < 2) continue;
+
+			var valueCell = cells[cells.length - 1];
+			if (valueCell.querySelector('.cbi-progressbar, .cbi-progressbar > div, svg, canvas, img'))
+				return true;
+
+			var text = (valueCell.textContent || '').replace(/\s+/g, ' ').trim();
+			if (text && text !== '?')
+				return true;
+		}
+
+		return false;
+	},
+
+	bindEmptyStatusFallback: function() {
+		var main = document.querySelector('#maincontent');
+		if (!main || main.dataset.cbEmptyStatusFallback) return;
+		main.dataset.cbEmptyStatusFallback = '1';
+
+		var check = function() {
+			main.querySelectorAll('.cbi-section').forEach(function(section) {
+				var heading = section.querySelector('.cbi-title h3');
+				if (!heading) return;
+
+				var title = (heading.textContent || '').replace(/^(Hide|Show)\s*/i, '').trim().toLowerCase();
+				if (!/^(memory|storage|port status)$/.test(title)) return;
+
+				if (!section.querySelector('table')) return;
+
+				if (!this.statusSectionHasData(section))
+					section.classList.add('cb-status-empty');
+				else
+					section.classList.remove('cb-status-empty');
+			}, this);
+		};
+
+		check();
+		setTimeout(check, 1200);
+		setTimeout(check, 3000);
+
+		if (typeof MutationObserver === 'function') {
+			var observer = new MutationObserver(function() { check(); });
+			observer.observe(main, { childList: true, subtree: true, characterData: true });
+			setTimeout(function() { observer.disconnect(); }, 10000);
+		}
 	},
 
 	bindMobileSidebar: function() {
