@@ -33,18 +33,22 @@ done
 
 grep -q 'max-width: 854px' "$HEADER" || fail "mobile stylesheet must use viewport width"
 
+grep -q 'cb-nav-chevron.*display: none' "$ROOT/htdocs/luci-static/cowboy-bebop/sidebar.css" || fail "sidebar arrows must be hidden"
+grep -q 'cb-nav-group-heading::after.*display:none' "$ROOT/htdocs/luci-static/cowboy-bebop/sidebar.css" || fail "sidebar pseudo arrows must be hidden"
+
 MENU="$ROOT/htdocs/luci-static/resources/menu-cowboy-bebop.js"
 grep -q 'cb-nav-section-heading' "$MENU" || fail "collapsible section heading missing"
 grep -q 'closeSiblingGroups' "$MENU" || fail "sidebar accordion behavior missing"
 grep -q 'bindMobileSidebar' "$MENU" || fail "mobile sidebar behavior missing"
 
-CONTROLS="$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css"
-grep -q 'input\[type="checkbox"\]' "$CONTROLS" || fail "checkbox normalization missing"
-grep -q 'input\[type="radio"\]' "$CONTROLS" || fail "radio normalization missing"
-grep -q 'cbi-dropdown > ul {' "$CONTROLS" || fail "collapsed dropdown shell missing"
-grep -q 'cbi-dropdown > ul.dropdown {' "$CONTROLS" || fail "dropdown popup shell missing"
-grep -q 'cbi-dropdown > ul.dropdown > li > form' "$CONTROLS" || fail "dropdown checkbox row layout missing"
-grep -q 'cbi-dropdown > ul.dropdown .ifacebadge' "$CONTROLS" || fail "interface badge normalization missing"
+grep -q 'input\[type="checkbox"\]' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "checkbox normalization missing"
+grep -q 'input\[type="radio"\]' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "radio normalization missing"
+grep -q 'cbi-dropdown > ul {' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "collapsed dropdown shell missing"
+grep -q 'cbi-dropdown > ul.dropdown {' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "dropdown popup shell missing"
+grep -q 'display: none !important;' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "dropdown popup must be hidden by default"
+grep -q 'cbi-dropdown\[open\] > ul.dropdown' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "dropdown popup open state missing"
+grep -q 'cbi-dropdown > ul.dropdown > li > form' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "dropdown checkbox row layout missing"
+grep -q 'cbi-dropdown > ul.dropdown .ifacebadge' "$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css" || fail "interface badge normalization missing"
 grep -q 'cbi-page-actions .cbi-dropdown.cbi-button' "$ROOT/htdocs/luci-static/cowboy-bebop/actions-fix.css" || fail "Save & Apply ComboButton normalization missing"
 
 echo "THEME STATIC CHECKS PASSED"
