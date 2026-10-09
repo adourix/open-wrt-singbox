@@ -1,61 +1,112 @@
 #!/bin/sh
-# rpcd executable plugin for Cowboy Bebop Manager.
-# Never returns the stored proxy URL, UUID, or private credentials.
-
+# rpcd interface. Never return stored proxy URLs or UUIDs to the browser.
 MANAGER=/usr/bin/cowboy-bebop-manager
 SERVICE=/etc/init.d/cowboy-bebop
 CONFIG=/etc/cowboy-bebop/config.json
+UCI_CFG=cowboy-bebop.main
 
 json_error() { jq -cn --arg error "$1" '{ok:false,error:$error}'; }
 short_error() { printf '%s\n' "$1" | tail -n 1 | cut -c 1-240; }
 
 status_json() {
-    running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false; allow_insecure=true
-    configured=false; protocol=; server=; server_port=; transport=; tls=false; state=STOPPED
-    [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ] && enabled=true
-    [ -n "$(uci -q get cowboy-bebop.main.proxy_url 2>/dev/null)" ] && configured=true
-    [ -f /etc/cowboy-bebop/config.pending ] || [ -f /etc/cowboy-bebop/state.pending.json ] && pending=true
-    "$SERVICE" enabled >/dev/null 2>&1 && auto_start=true
-    if command -v sing-box >/dev/null 2>&1 && [ -f "$CONFIG" ] && sing-box check -c "$CONFIG" >/dev/null 2>&1; then valid=true; fi
-    if command -v pidof >/dev/null 2>&1 && pidof sing-box >/dev/null 2>&1; then
-        running=true; state=RUNNING
-        ip link show tun0 >/dev/null 2>&1 && tun=true
-        ip route show table all 2>/dev/null | grep -q '[[:space:]]dev tun0\([[:space:]]\|$\)' && routing=true
-    elif [ "$enabled" = true ]; then state=ERROR; fi
-    if [ -f "$CONFIG" ]; then
-        protocol=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .type // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        server=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        server_port=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server_port // empty' "$CONFIG" 2>/dev/null | head -n 1)
-        transport=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .transport.type // "tcp"' "$CONFIG" 2>/dev/null | head -n 1)
-        tls=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | (.tls.enabled // false)' "$CONFIG" 2>/dev/null | head -n 1)
-    fi
-    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" --argjson configured "$configured" --argjson allow_insecure "$allow_insecure" --arg state "$state" --arg protocol "${protocol:-}" --arg server "${server:-}" --arg server_port "${server_port:-}" --arg transport "${transport:-}" --argjson tls "${tls:-false}" '{state:$state,enabled:$enabled,running:$running,auto_start:$auto_start,allow_insecure:$allow_insecure,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls}'
+ running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false
+ configured=false; protocol=; server=; server_port=; transport=; tls=false; state=STOPPED
+ [ "$(uci -q get "$UCI_CFG.enabled" 2>/dev/null)" = "1" ] && enabled=true
+ [ -n "$(uci -q get "$UCI_CFG.proxy_url" 2>/dev/null)" ] && configured=true
+ { [ -f /etc/cowboy-bebop/config.pending ] || [ -f /etc/cowboy-bebop/state.pending.json ]; } && pending=true
+ "$SERVICE" enabled >/dev/null 2>&1 && auto_start=true
+ if command -v sing-box >/dev/null 2>&1 && [ -f "$CONFIG" ] && sing-box check -c "$CONFIG" >/dev/null 2>&1; then valid=true; fi
+ if command -v pidof >/dev/null 2>&1 && pidof sing-box >/dev/null 2>&1; then
+  running=true; state=RUNNING
+  ip link show tun0 >/dev/null 2>&1 && tun=true
+  ip route show table all 2>/dev/null | grep -q '[[:space:]]dev tun0\([[:space:]]\|$\)' && routing=true
+ elif [ "$enabled" = true ]; then state=ERROR; fi
+ if [ -f "$CONFIG" ]; then
+  protocol=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .type // empty' "$CONFIG" 2>/dev/null | head -n 1)
+  server=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server // empty' "$CONFIG" 2>/dev/null | head -n 1)
+  server_port=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server_port // empty' "$CONFIG" 2>/dev/null | head -n 1)
+  transport=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .transport.type // "tcp"' "$CONFIG" 2>/dev/null | head -n 1)
+  tls=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | (.tls.enabled // false)' "$CONFIG" 2>/dev/null | head -n 1)
+ fi
+ jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" --argjson configured "$configured" --arg state "$state" --arg protocol "$protocol" --arg server "$server" --arg server_port "$server_port" --arg transport "$transport" --argjson tls "$tls" '{state:$state,enabled:$enabled,running:$running,auto_start:$auto_start,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls}'
 }
-
+settings_json() {
+ auto_start=false; allow_insecure=false; ipv6_policy=block
+ [ "$(uci -q get "$UCI_CFG.auto_start" 2>/dev/null)" = "1" ] && auto_start=true
+ [ "$(uci -q get "$UCI_CFG.allow_insecure" 2>/dev/null)" = "1" ] && allow_insecure=true
+ value=$(uci -q get "$UCI_CFG.ipv6_policy" 2>/dev/null)
+ case "$value" in block|proxy) ipv6_policy=$value ;; esac
+ jq -cn --argjson auto_start "$auto_start" --argjson allow_insecure "$allow_insecure" --arg ipv6_policy "$ipv6_policy" '{auto_start:$auto_start,allow_insecure:$allow_insecure,ipv6_policy:$ipv6_policy}'
+}
+save_settings() {
+ input=$(cat) || return 1
+ auto=$(printf '%s' "$input" | jq -er '.auto_start | if type=="boolean" then (if . then "1" else "0" end) else error end') || return 1
+ insecure=$(printf '%s' "$input" | jq -er '.allow_insecure | if type=="boolean" then (if . then "1" else "0" end) else error end') || return 1
+ ipv6=$(printf '%s' "$input" | jq -er '.ipv6_policy | strings') || return 1
+ case "$ipv6" in block|proxy) ;; *) json_error 'Invalid IPv6 policy.'; return 0 ;; esac
+ uci set "$UCI_CFG.auto_start=$auto" || return 1
+ uci set "$UCI_CFG.allow_insecure=$insecure" || return 1
+ uci set "$UCI_CFG.ipv6_policy=$ipv6" || return 1
+ uci commit cowboy-bebop || return 1
+ if [ "$auto" = "1" ]; then "$SERVICE" enable >/dev/null 2>&1 || { json_error 'Settings saved, but auto-start could not be enabled.'; return 0; }
+ else "$SERVICE" disable >/dev/null 2>&1 || { json_error 'Settings saved, but auto-start could not be disabled.'; return 0; }; fi
+ printf '%s\n' '{"ok":true}'
+}
 preview_profile() {
-    proxy_url=$1; [ -n "$proxy_url" ] || return 1
-    . /usr/lib/cowboy-bebop/protocol/detector.sh || return 1
-    . /usr/lib/cowboy-bebop/protocol/vmess/parser.sh || return 1
-    . /usr/lib/cowboy-bebop/protocol/vless/parser.sh || return 1
-    protocol=$(detect_protocol "$proxy_url") || return 1
-    case "$protocol" in vmess) profile=$(vmess_parse "$proxy_url") || return 1 ;; vless) profile=$(VLESS_ALLOW_INSECURE=1 vless_parse "$proxy_url") || return 1 ;; *) return 1 ;; esac
-    printf '%s' "$profile" | jq -c '{protocol,server,server_port,transport:.transport.type,tls:.tls.enabled,name:(.metadata.name // null)}'
+ proxy_url=$1; [ -n "$proxy_url" ] || return 1
+ . /usr/lib/cowboy-bebop/protocol/detector.sh || return 1
+ . /usr/lib/cowboy-bebop/protocol/vmess/parser.sh || return 1
+ . /usr/lib/cowboy-bebop/protocol/vless/parser.sh || return 1
+ protocol=$(detect_protocol "$proxy_url") || return 1
+ case "$protocol" in
+  vmess) profile=$(vmess_parse "$proxy_url") || return 1 ;;
+  vless) profile=$(VLESS_ALLOW_INSECURE="$(uci -q get "$UCI_CFG.allow_insecure" 2>/dev/null)" vless_parse "$proxy_url") || return 1 ;;
+  *) return 1 ;;
+ esac
+ printf '%s' "$profile" | jq -c '{protocol,server,server_port,transport:(.transport.type // "tcp"),tls:(.tls.enabled // false),name:(.metadata.name // null)}'
 }
-run_manager() { output=$($MANAGER "$1" 2>&1); rc=$?; if [ "$rc" -eq 0 ]; then printf '%s\n' '{"ok":true}'; else json_error "$(short_error "$output")"; fi; return 0; }
-
+run_manager() {
+ output=$($MANAGER "$1" 2>&1); rc=$?
+ if [ "$rc" -eq 0 ]; then printf '%s\n' '{"ok":true}'; else json_error "$(short_error "$output")"; fi
+ return 0
+}
 case "$1" in
-list) printf '%s\n' '{"status":{},"preview":{"proxy_url":""},"apply":{"proxy_url":""},"start":{},"stop":{},"set_enabled":{"enabled":true},"health":{},"logs":{},"confirm":{}}' ;;
+list)
+ printf '%s\n' '{"status":{},"health":{},"preview":{"proxy_url":""},"apply":{"proxy_url":""},"start":{},"stop":{},"set_enabled":{"enabled":true},"settings":{},"set_settings":{"auto_start":false,"allow_insecure":false,"ipv6_policy":""},"recovery":{},"logs":{},"confirm":{}}'
+ ;;
 call)
-    case "$2" in
-    status) status_json ;;
-    health) "$MANAGER" health >/dev/null 2>&1; rc=$?; status_json | jq --argjson ok "$([ "$rc" -eq 0 ] && echo true || echo false)" '. + {ok:$ok}'; [ "$rc" -eq 0 ] || exit 1 ;;
-    preview) input=$(cat); proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || exit 1; if ! output=$(preview_profile "$proxy_url" 2>&1); then json_error "$(short_error "$output")"; exit 0; fi; printf '%s\n' "$output" ;;
-    apply) input=$(cat); proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || { json_error 'Proxy URL is required.'; exit 0; }; [ -n "$proxy_url" ] || { json_error 'Proxy URL is required.'; exit 0; }; if output=$(SINGBOX_PROXY_URL="$proxy_url" SINGBOX_AUTO_START=1 SINGBOX_ALLOW_INSECURE=1 "$MANAGER" apply 2>&1); then printf '%s\n' '{"ok":true,"applied":true}'; else json_error "$(short_error "$output")"; fi ;;
-    start) run_manager start ;;
-    stop) run_manager stop ;;
-    set_enabled) enabled=$(cat | jq -er '.enabled | if type=="boolean" then . else error end') || { json_error 'Invalid ON/OFF value.'; exit 0; }; if [ "$enabled" = true ]; then run_manager start; else run_manager stop; fi ;;
-    confirm) if output=$($MANAGER confirm 2>&1); then printf '%s\n' '{"ok":true,"confirmed":true}'; else json_error "$(short_error "$output")"; fi ;;
-    logs) logread -e cowboy-bebop 2>/dev/null | tail -n 30 | sed -E 's#(vless|vmess)://[^[:space:]]+#[REDACTED-URL]#g; s/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}/[REDACTED-UUID]/g' | jq -Rsc '{lines:(split("\n")|map(select(length>0)))}' ;;
-    *) exit 1 ;;
-    esac ;;
+ case "$2" in
+  status) status_json ;;
+  health)
+   output=$("$MANAGER" health 2>&1); rc=$?
+   status_json | jq --argjson ok "$([ "$rc" -eq 0 ] && echo true || echo false)" '. + {ok:$ok}'
+   ;;
+  settings) settings_json ;;
+  set_settings)
+   output=$(save_settings 2>&1); rc=$?
+   case "$output" in *'"ok":true'*|*'"ok":false'*) printf '%s\n' "$output" ;; *) [ "$rc" -eq 0 ] && json_error 'Unable to save settings.' || json_error 'Invalid settings payload.' ;; esac
+   ;;
+  preview)
+   input=$(cat); proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || { json_error 'Proxy URL is required.'; exit 0; }
+   if output=$(preview_profile "$proxy_url" 2>&1); then printf '%s\n' "$output"; else json_error "$(short_error "$output")"; fi
+   ;;
+  apply)
+   input=$(cat); proxy_url=$(printf '%s' "$input" | jq -er '.proxy_url | strings') || { json_error 'Proxy URL is required.'; exit 0; }
+   [ -n "$proxy_url" ] || { json_error 'Proxy URL is required.'; exit 0; }
+   allow_insecure=$(uci -q get "$UCI_CFG.allow_insecure" 2>/dev/null)
+   if output=$(SINGBOX_PROXY_URL="$proxy_url" SINGBOX_AUTO_START=1 SINGBOX_ALLOW_INSECURE="$allow_insecure" "$MANAGER" apply 2>&1); then printf '%s\n' '{"ok":true,"applied":true}'; else json_error "$(short_error "$output")"; fi
+   ;;
+  start) run_manager start ;;
+  stop) run_manager stop ;;
+  set_enabled) enabled=$(cat | jq -er '.enabled | if type=="boolean" then (if . then "1" else "0" end) else error end') || { json_error 'Invalid ON/OFF value.'; exit 0; }; if [ "$enabled" = "1" ]; then run_manager start; else run_manager stop; fi ;;
+  confirm) run_manager confirm ;;
+  recovery) run_manager recovery ;;
+  logs)
+   logread -e cowboy-bebop 2>/dev/null | tail -n 40 |
+    sed -E 's#(vless|vmess)://[^[:space:]]+#[REDACTED-URL]#g; s/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{3,4}-[1-5][0-9A-Fa-f]{3}-[89AaBb][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}/[REDACTED-UUID]/g' |
+    jq -Rsc '{lines:(split("\n")|map(select(length>0)))}'
+   ;;
+  *) exit 1 ;;
+ esac
+ ;;
 esac

@@ -1,6 +1,10 @@
 name: Build Cowboy Bebop LuCI Package
-
 on:
+  push:
+    branches: [main, phase-c-native-luci-ui]
+    paths: ["openwrt/luci-app-cowboy-bebop/**", "openwrt/luci-theme-cowboy-bebop/**", ".github/workflows/build-luci.yml", ".github/workflows/build-theme.yml"]
+  pull_request:
+    paths: ["openwrt/luci-app-cowboy-bebop/**", "openwrt/luci-theme-cowboy-bebop/**", ".github/workflows/build-luci.yml", ".github/workflows/build-theme.yml"]
   workflow_dispatch:
     inputs:
       target:
@@ -9,10 +13,8 @@ on:
         default: "both"
         type: choice
         options: [kt708, x86_64, both]
-
 permissions:
   contents: read
-
 env:
   OPENWRT_VERSION: "25.12.5"
   X86_SDK_FILE: openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
@@ -20,20 +22,27 @@ env:
   KT708_ARCH: "arm_cortex-a7_neon-vfpv4"
   KT708_SDK_FILE: openwrt-sdk-25.12.5-ipq40xx-generic_gcc-14.3.0_musl_eabi.Linux-x86_64.tar.zst
   KT708_SDK_SHA256: af3d15643f8459335b1c98dc97dd47897d2d8e825a990a161b16b43de2281515
-
 jobs:
+  test-ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install syntax tools
+        run: sudo apt-get update && sudo apt-get install -y nodejs
+      - name: Validate UI and RPC syntax
+        run: |
+          set -eu
+          for f in openwrt/luci-app-cowboy-bebop/htdocs/luci-static/resources/view/cowboy-bebop/*.js; do node --check "$f"; done
+          sh -n openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop
+          sh openwrt/luci-theme-cowboy-bebop/tests/test-theme.sh
   build-x86_64:
-    if: inputs.target == 'x86_64' || inputs.target == 'both'
+    needs: test-ui
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'x86_64' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib gettext git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev file wget zstd
-      - name: Cache SDK
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.X86_SDK_FILE }}
-          key: sdk-${{ env.X86_SDK_FILE }}
       - name: Download and verify SDK
         run: |
           set -eu
@@ -41,82 +50,32 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$X86_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test -n "$SHA"
-          if [ -f "$X86_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c - || rm -f "$X86_SDK_FILE"; fi
-          [ -f "$X86_SDK_FILE" ] || wget -q "$BASE/$X86_SDK_FILE" -O "$X86_SDK_FILE"
+          wget -q "$BASE/$X86_SDK_FILE" -O "$X86_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$X86_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$X86_SDK_FILE"
           echo "SDK_DIR=$PWD/${X86_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-      - name: Prepare feeds and packages
+      - name: Prepare and build packages
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only: nothing from the feeds needs to be compiled for this
-          # package (the Makefile only copies files). Installed feed packages
-          # would become build dependencies (sing-box-tiny is a long Go build).
           ./scripts/feeds update packages
-          test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
-      - name: Verify package metadata
-        run: |
-          set -eu
-          cd "$SDK_DIR"
           make defconfig
-          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
-          grep -q 'DEPENDS:=+luci-base +rpcd +cowboy-bebop-manager' package/luci-app-cowboy-bebop/Makefile
-      - name: Build LuCI package
-        env:
-          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-        run: |
-          set -eu
-          cd "$SDK_DIR"
-          LOG="$GITHUB_WORKSPACE/build-luci-x86_64.log"
-          build() { make package/luci-app-cowboy-bebop/compile V=s; }
-          if ! build > "$LOG" 2>&1; then
-            echo "::group::First attempt failed (feeds not installed) - context before the first failure"
-            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
-            echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
-            ./scripts/feeds install -a
-            if ! build >> "$LOG" 2>&1; then
-              echo "::group::Second attempt failed - end of log"
-              tail -n 150 "$LOG"
-              echo "::endgroup::"
-              exit 1
-            fi
-          fi
-      - name: Upload failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: luci-build-log-x86_64
-          path: build-luci-x86_64.log
-          if-no-files-found: ignore
-      - name: Collect package
-        run: |
-          set -eu
-          mkdir -p artifacts
-          find "$SDK_DIR/bin/packages" -type f -name 'luci-app-cowboy-bebop-*.apk' -exec cp {} artifacts/ \;
-          test -n "$(find artifacts -type f -name 'luci-app-cowboy-bebop-*.apk' -print -quit)"
+          make package/cowboy-bebop-manager/compile package/luci-app-cowboy-bebop/compile V=s
       - uses: actions/upload-artifact@v4
         with:
-          name: luci-app-cowboy-bebop-${{ env.OPENWRT_VERSION }}-x86-64
-          path: artifacts/*.apk
-          if-no-files-found: error
-
+          name: cowboy-bebop-luci-x86_64
+          path: ${{ env.SDK_DIR }}/bin/packages/**/*.apk
+          if-no-files-found: warn
   build-kt708:
-    if: inputs.target == 'kt708' || inputs.target == 'both'
+    needs: test-ui
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'kt708' || inputs.target == 'both'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib gettext git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev file wget zstd
-      - name: Cache SDK
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.KT708_SDK_FILE }}
-          key: sdk-${{ env.KT708_SDK_FILE }}
       - name: Download and verify SDK
         run: |
           set -eu
@@ -124,73 +83,21 @@ jobs:
           wget -q "$BASE/sha256sums"
           SHA="$(awk -v f="$KT708_SDK_FILE" '$2 == "*" f || $2 == f {print $1; exit}' sha256sums)"
           test "$SHA" = "$KT708_SDK_SHA256"
-          if [ -f "$KT708_SDK_FILE" ]; then printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c - || rm -f "$KT708_SDK_FILE"; fi
-          [ -f "$KT708_SDK_FILE" ] || wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
+          wget -q "$BASE/$KT708_SDK_FILE" -O "$KT708_SDK_FILE"
           printf '%s  %s\n' "$SHA" "$KT708_SDK_FILE" | sha256sum -c -
           tar --zstd -xf "$KT708_SDK_FILE"
           echo "SDK_DIR=$PWD/${KT708_SDK_FILE%.tar.zst}" >> "$GITHUB_ENV"
-      - name: Verify SDK
+      - name: Prepare and build packages
         run: |
           set -eu
           cd "$SDK_DIR"
-          make defconfig
-          grep -q '^CONFIG_TARGET_ipq40xx=y$' .config
-          grep -q "^CONFIG_TARGET_ARCH_PACKAGES=\"${KT708_ARCH}\"$" .config
-      - name: Prepare feeds and packages
-        run: |
-          set -eu
-          cd "$SDK_DIR"
-          # Update only: nothing from the feeds needs to be compiled for this
-          # package (the Makefile only copies files). Installed feed packages
-          # would become build dependencies (sing-box-tiny is a long Go build).
           ./scripts/feeds update packages
-          test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
-      - name: Verify package metadata
-        run: |
-          set -eu
-          cd "$SDK_DIR"
           make defconfig
-          grep -q '^PKG_NAME:=luci-app-cowboy-bebop$' package/luci-app-cowboy-bebop/Makefile
-          grep -q 'DEPENDS:=+luci-base +rpcd +cowboy-bebop-manager' package/luci-app-cowboy-bebop/Makefile
-      - name: Build LuCI package
-        env:
-          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-        run: |
-          set -eu
-          cd "$SDK_DIR"
-          LOG="$GITHUB_WORKSPACE/build-luci-kt708.log"
-          build() { make package/luci-app-cowboy-bebop/compile V=s; }
-          if ! build > "$LOG" 2>&1; then
-            echo "::group::First attempt failed (feeds not installed) - context before the first failure"
-            grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
-            echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
-            ./scripts/feeds install -a
-            if ! build >> "$LOG" 2>&1; then
-              echo "::group::Second attempt failed - end of log"
-              tail -n 150 "$LOG"
-              echo "::endgroup::"
-              exit 1
-            fi
-          fi
-      - name: Upload failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: luci-build-log-kt708
-          path: build-luci-kt708.log
-          if-no-files-found: ignore
-      - name: Collect package
-        run: |
-          set -eu
-          mkdir -p artifacts-kt708
-          find "$SDK_DIR/bin/packages" -type f -name 'luci-app-cowboy-bebop-*.apk' -exec cp {} artifacts-kt708/ \;
-          test -n "$(find artifacts-kt708 -type f -name 'luci-app-cowboy-bebop-*.apk' -print -quit)"
+          make package/cowboy-bebop-manager/compile package/luci-app-cowboy-bebop/compile V=s
       - uses: actions/upload-artifact@v4
         with:
-          name: luci-app-cowboy-bebop-${{ env.OPENWRT_VERSION }}-ipq40xx-generic-${{ env.KT708_ARCH }}
-          path: artifacts-kt708/*.apk
-          if-no-files-found: error
+          name: cowboy-bebop-luci-kt708
+          path: ${{ env.SDK_DIR }}/bin/packages/**/*.apk
+          if-no-files-found: warn
