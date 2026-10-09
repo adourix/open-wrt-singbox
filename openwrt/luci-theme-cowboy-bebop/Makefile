@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=10
+PKG_RELEASE:=11
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -11,18 +11,19 @@ define Package/luci-theme-cowboy-bebop
   SECTION:=luci
   CATEGORY:=LuCI
   SUBMENU:=4. Themes
-  TITLE:=Cowboy Bebop Manager visual theme (optional)
+  TITLE:=Cowboy Bebop full LuCI visual theme
   PKGARCH:=all
 endef
 
 define Package/luci-theme-cowboy-bebop/description
-Optional visual theme assets for Cowboy Bebop Manager. This package does not activate itself; install the app package to keep stock LuCI as the default.
+Full LuCI visual theme matching the project reference UI: dark compact navigation rail, clean light workspace, responsive forms and tables, and branded login page.
 endef
 
 define Package/luci-theme-cowboy-bebop/postinst
 #!/bin/sh
 [ -n "$(IPKG_INSTROOT)" ] || {
     uci -q set luci.themes.CowboyBebop=/luci-static/cowboy-bebop
+    uci -q set luci.main.mediaurlbase=/luci-static/cowboy-bebop
     uci -q commit luci
 }
 exit 0
@@ -34,6 +35,7 @@ endef
 define Package/luci-theme-cowboy-bebop/install
 	$(INSTALL_DIR) $(1)/www/luci-static/cowboy-bebop
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/cascade.css $(1)/www/luci-static/cowboy-bebop/cascade.css
+	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/reference.css $(1)/www/luci-static/cowboy-bebop/reference.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/mobile.css $(1)/www/luci-static/cowboy-bebop/mobile.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/logo.svg $(1)/www/luci-static/cowboy-bebop/logo.svg
 	$(INSTALL_DIR) $(1)/www/luci-static/resources
