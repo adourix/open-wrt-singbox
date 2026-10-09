@@ -40,7 +40,6 @@ grep -q 'cb-nav-section-heading' "$MENU" || fail "collapsible section heading mi
 grep -q 'closeSiblingGroups' "$MENU" || fail "sidebar accordion behavior missing"
 grep -q 'bindMobileSidebar' "$MENU" || fail "mobile sidebar behavior missing"
 
-CONTROLS="$ROOT/htdocs/luci-theme-cowboy-bebop/controls-fix.css"
 CONTROLS="$ROOT/htdocs/luci-static/cowboy-bebop/controls-fix.css"
 grep -q 'input\[type="checkbox"\]' "$CONTROLS" || fail "checkbox normalization missing"
 grep -q 'input\[type="radio"\]' "$CONTROLS" || fail "radio normalization missing"
