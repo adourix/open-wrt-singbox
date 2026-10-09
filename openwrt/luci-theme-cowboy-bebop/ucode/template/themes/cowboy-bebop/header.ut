@@ -13,6 +13,7 @@
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
 	<link rel="stylesheet" href="{{ media }}/reference.css">
 	<link rel="stylesheet" media="only screen and (max-device-width: 854px)" href="{{ media }}/mobile.css">
+	<link rel="stylesheet" href="{{ media }}/sidebar.css">
 	<link rel="icon" href="{{ media }}/logo.svg" type="image/svg+xml">
 	<style>
 		@media (min-width: 901px) {
