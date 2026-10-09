@@ -1,10 +1,156 @@
-/* Cowboy Bebop — LuCI action bar isolation */
+/* Cowboy Bebop — global LuCI action bar normalization */
 
 /*
- * LuCI may render its generic Save/Apply/Reset footer in addition to
- * application-owned action bars. Cowboy Bebop Manager already owns its
- * controls, so the generic footer must not compete with it.
+ * LuCI uses several generations of markup for Save / Apply / Reset.
+ * Some pages expose the controls as lists or nested button groups. The
+ * theme must normalize all of them so they never render as raw bullets
+ * or as one oversized solid-blue block.
  */
+.cbi-page-actions,
+.cbi-page-actions ul,
+.cbi-page-actions ol {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 8px !important;
+	flex-wrap: wrap !important;
+	width: 100% !important;
+	min-height: 0 !important;
+	margin: 20px 0 0 !important;
+	padding: 14px 0 0 !important;
+	border-top: 1px solid #e4e7ec !important;
+	background: transparent !important;
+	list-style: none !important;
+	box-sizing: border-box !important;
+}
+
+.cbi-page-actions ul,
+.cbi-page-actions ol {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.cbi-page-actions li {
+	display: inline-flex !important;
+	align-items: center !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+
+/* Flatten wrappers responsible for the giant blue button block. */
+.cbi-page-actions .cbi-button-group,
+.cbi-page-actions .btn-group,
+.cbi-page-actions .cbi-button-group > ul,
+.cbi-page-actions .btn-group > ul {
+	display: contents !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	list-style: none !important;
+}
+
+.cbi-page-actions .cbi-button,
+.cbi-page-actions button,
+.cbi-page-actions input[type="submit"],
+.cbi-page-actions input[type="button"] {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	vertical-align: middle !important;
+	box-sizing: border-box !important;
+	width: auto !important;
+	min-width: 84px !important;
+	max-width: none !important;
+	min-height: 36px !important;
+	height: auto !important;
+	margin: 0 !important;
+	padding: 8px 14px !important;
+	border: 1px solid #d0d5dd !important;
+	border-radius: 7px !important;
+	background: #fff !important;
+	color: #344054 !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	line-height: 18px !important;
+	text-align: center !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+	box-shadow: 0 1px 2px rgba(16,24,40,.04) !important;
+	cursor: pointer !important;
+}
+
+.cbi-page-actions .cbi-button:hover,
+.cbi-page-actions button:hover,
+.cbi-page-actions input[type="submit"]:hover,
+.cbi-page-actions input[type="button"]:hover {
+	background: #f8fafc !important;
+	border-color: #98a2b3 !important;
+	color: #17202b !important;
+}
+
+/* Primary actions: Save & Apply / Apply / Save. */
+.cbi-page-actions .cbi-button-save,
+.cbi-page-actions .cbi-button-apply,
+.cbi-page-actions .cbi-button-action,
+.cbi-page-actions button[name="cbi.apply"],
+.cbi-page-actions input[name="cbi.apply"],
+.cbi-page-actions input[name="cbi.submit"] {
+	background: #2563eb !important;
+	border-color: #2563eb !important;
+	color: #fff !important;
+	box-shadow: 0 1px 2px rgba(37,99,235,.18) !important;
+}
+
+.cbi-page-actions .cbi-button-save:hover,
+.cbi-page-actions .cbi-button-apply:hover,
+.cbi-page-actions .cbi-button-action:hover,
+.cbi-page-actions button[name="cbi.apply"]:hover,
+.cbi-page-actions input[name="cbi.apply"]:hover,
+.cbi-page-actions input[name="cbi.submit"]:hover {
+	background: #1d4ed8 !important;
+	border-color: #1d4ed8 !important;
+	color: #fff !important;
+}
+
+.cbi-page-actions .cbi-button-reset,
+.cbi-page-actions button[name="cbi.reset"],
+.cbi-page-actions input[name="cbi.reset"] {
+	background: #fff !important;
+	border-color: #d0d5dd !important;
+	color: #344054 !important;
+}
+
+/* Fix labels / checkbox-looking Apply controls when LuCI renders them as list items. */
+.cbi-page-actions label {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	background: transparent !important;
+	color: #475467 !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+}
+
+.cbi-page-actions input[type="checkbox"] {
+	width: 15px !important;
+	height: 15px !important;
+	min-width: 15px !important;
+	min-height: 15px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Cowboy Bebop Manager owns its own action bar; keep it clean and local. */
 body:has(.cb-manager-page) .cbi-page-actions {
 	display: none !important;
 }
@@ -23,7 +169,6 @@ body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions {
 	background: transparent !important;
 }
 
-/* The Manager action bar contains real buttons, not a styled button group. */
 body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .cbi-button,
 body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions button {
 	display: inline-flex !important;
@@ -37,16 +182,16 @@ body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions button {
 	border-radius: 6px !important;
 }
 
-/* Never let a nested LuCI button-group inherit a solid primary background. */
-body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .cbi-button-group,
-body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions .btn-group {
-	display: contents !important;
-	background: transparent !important;
-	border: 0 !important;
-	box-shadow: none !important;
-}
-
 @media (max-width: 900px) {
+	.cbi-page-actions {
+		justify-content: stretch !important;
+	}
+	.cbi-page-actions .cbi-button,
+	.cbi-page-actions button,
+	.cbi-page-actions input[type="submit"],
+	.cbi-page-actions input[type="button"] {
+		flex: 0 1 auto !important;
+	}
 	body:has(.cb-manager-page) .cb-manager-page .cbi-page-actions {
 		justify-content: stretch !important;
 	}
