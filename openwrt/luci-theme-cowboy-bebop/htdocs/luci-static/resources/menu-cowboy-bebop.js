@@ -38,31 +38,65 @@ return baseclass.extend({
 		return parent ? L.url(parent, child.name) : L.url(child.name);
 	},
 
+	closeSiblingGroups: function(li) {
+		var parent = li.parentNode;
+		if (!parent) return;
+		Array.prototype.forEach.call(parent.children, function(sibling) {
+			if (sibling === li || !sibling.classList.contains('cb-nav-group')) return;
+			sibling.classList.remove('open');
+			var heading = sibling.querySelector(':scope > .cb-nav-group-heading');
+			if (heading) heading.setAttribute('aria-expanded', 'false');
+		});
+	},
+
 	renderLevel: function(tree, container, url, depth) {
 		var children = ui.menu.getChildren(tree);
 		children.forEach(function(child) {
 			var nested = ui.menu.getChildren(child);
 			var hasChildren = nested.length > 0;
 			var active = this.isActive(child.name, depth + 1);
-			var li = E('li', { 'class': (hasChildren ? 'cb-nav-group ' : '') + (active ? 'active open' : '') });
+			var li = E('li', {
+				'class': (hasChildren ? 'cb-nav-group ' : '') + (active ? 'active open' : '')
+			});
 
 			if (hasChildren) {
+				var headingClass = depth === 0 ? 'cb-nav-group-heading cb-nav-section-heading' : 'cb-nav-group-heading';
+				var headingParts = [];
+				if (depth !== 0)
+					headingParts.push(this.iconSvg(child.name, true));
+				headingParts.push(E('span', { 'class': 'cb-nav-label' }, [_(child.title)]));
+				headingParts.push(E('span', { 'class': 'cb-nav-chevron', 'aria-hidden': 'true' }, ['⌄']));
+
 				var heading = E('button', {
-					'class': 'cb-nav-group-heading', 'type': 'button',
-					'aria-expanded': active ? 'true' : 'false', 'title': _(child.title)
-				}, [this.iconSvg(child.name, true), E('span', { 'class': 'cb-nav-label' }, [_(child.title)])]);
-				var submenu = E('ul', { 'class': 'cb-nav-submenu cb-nav-level-' + (depth + 1) });
-				this.renderLevel(child, submenu, url ? url + '/' + child.name : child.name, depth + 1);
-				heading.addEventListener('click', function() {
-					var open = li.classList.toggle('open');
-					heading.setAttribute('aria-expanded', open ? 'true' : 'false');
+					'class': headingClass,
+					'type': 'button',
+					'aria-expanded': active ? 'true' : 'false',
+					'title': _(child.title)
+				}, headingParts);
+
+				var submenu = E('ul', {
+					'class': 'cb-nav-submenu cb-nav-level-' + (depth + 1)
 				});
+				this.renderLevel(child, submenu, url ? url + '/' + child.name : child.name, depth + 1);
+
+				heading.addEventListener('click', function() {
+					var open = li.classList.contains('open');
+					if (!open) this.closeSiblingGroups(li);
+					li.classList.toggle('open', !open);
+					heading.setAttribute('aria-expanded', !open ? 'true' : 'false');
+				}.bind(this));
+
 				li.appendChild(heading);
 				li.appendChild(submenu);
 			}
 			else {
-				li.appendChild(E('a', { 'href': this.urlFor(url, child), 'class': 'cb-nav-link' + (active ? ' active' : ''), 'title': _(child.title) }, [
-					this.iconSvg(child.name, false), E('span', { 'class': 'cb-nav-label' }, [_(child.title)])
+				li.appendChild(E('a', {
+					'href': this.urlFor(url, child),
+					'class': 'cb-nav-link' + (active ? ' active' : ''),
+					'title': _(child.title)
+				}, [
+					this.iconSvg(child.name, false),
+					E('span', { 'class': 'cb-nav-label' }, [_(child.title)])
 				]));
 			}
 			container.appendChild(li);
