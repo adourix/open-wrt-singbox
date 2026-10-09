@@ -28,19 +28,12 @@
 	color:#b7c2d1;
 }
 .cb-sidebar > nav > ul > li.cb-nav-group > .cb-nav-section-heading::before{display:none!important}
+
+/* The project intentionally uses text-only section headings; suppress the
+ * generic cascade arrow as well as the legacy .cb-nav-chevron span. */
+.cb-sidebar .cb-nav-group-heading::after{display:none!important;content:none!important}
 .cb-nav-section-heading .cb-nav-label{overflow:visible}
-.cb-nav-section-heading .cb-nav-chevron{
-	width:18px;
-	flex:0 0 18px;
-	color:#66758a;
-	font-size:12px;
-	font-weight:500;
-	line-height:1;
-	text-align:center;
-	transform:rotate(0deg);
-	transition:transform .14s ease,color .14s ease;
-}
-.cb-nav-group.open > .cb-nav-section-heading .cb-nav-chevron{transform:rotate(180deg);color:#3b82f6}
+.cb-nav-section-heading .cb-nav-chevron{display:none!important}
 
 /* Sub-items stay hidden until their section is opened */
 .cb-sidebar .cb-nav-submenu{display:none;padding:1px 0 5px 10px!important;margin:0!important}
@@ -92,13 +85,7 @@
 	background:#182231;
 	color:#fff;
 }
-.cb-sidebar .cb-nav-submenu .cb-nav-group-heading .cb-nav-chevron{
-	margin-left:auto;
-	color:#68778b;
-	font-size:11px;
-	transition:transform .14s ease;
-}
-.cb-sidebar .cb-nav-submenu .cb-nav-group.open > .cb-nav-group-heading .cb-nav-chevron{transform:rotate(180deg);color:#6ea2ff}
+.cb-sidebar .cb-nav-submenu .cb-nav-group-heading .cb-nav-chevron{display:none!important}
 .cb-sidebar .cb-nav-submenu .cb-nav-group > .cb-nav-submenu{padding-left:17px!important}
 
 /* A clean separator before the machine footer */
