@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-theme-cowboy-bebop
-PKG_RELEASE:=13
+PKG_RELEASE:=14
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 
@@ -40,6 +40,7 @@ define Package/luci-theme-cowboy-bebop/install
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/sidebar.css $(1)/www/luci-static/cowboy-bebop/sidebar.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/navigation-fix.css $(1)/www/luci-static/cowboy-bebop/navigation-fix.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/dashboard-fix.css $(1)/www/luci-static/cowboy-bebop/dashboard-fix.css
+	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/controls-fix.css $(1)/www/luci-static/cowboy-bebop/controls-fix.css
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/logo.svg $(1)/www/luci-static/cowboy-bebop/logo.svg
 	$(INSTALL_DATA) ./htdocs/luci-static/cowboy-bebop/actions-fix.css $(1)/www/luci-static/cowboy-bebop/actions-fix.css
 	$(INSTALL_DIR) $(1)/www/luci-static/resources
