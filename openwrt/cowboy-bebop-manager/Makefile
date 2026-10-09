@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-manager
-PKG_RELEASE:=19
+PKG_RELEASE:=20
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 REPLACES:=singbox-manager
@@ -12,7 +12,7 @@ define Package/cowboy-bebop-manager
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Cowboy Bebop Manager for sing-box
-  DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag
+  DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-inet-diag
 endef
 
 define Package/cowboy-bebop-manager/description
