@@ -3,14 +3,8 @@ set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
-fail() {
-	echo "TEST FAIL: $*" >&2
-	exit 1
-}
-
-pass() {
-	echo "TEST PASS: $*"
-}
+fail() { echo "TEST FAIL: $*" >&2; exit 1; }
+pass() { echo "TEST PASS: $*"; }
 
 [ -f "$ROOT/Makefile" ] || fail "theme Makefile is missing"
 [ -f "$ROOT/htdocs/luci-static/cowboy-bebop/cascade.css" ] || fail "cascade.css is missing"
@@ -23,7 +17,7 @@ pass() {
 [ -f "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop" ] || fail "theme activation script is missing"
 pass "all theme files exist"
 
-grep -q '^PKG_RELEASE:=6$' "$ROOT/Makefile" || fail "expected theme release 6"
+grep -q '^PKG_RELEASE:=7$' "$ROOT/Makefile" || fail "expected theme release 7"
 grep -q 'DEPENDS:=+luci-base' "$ROOT/Makefile" || fail "luci-base dependency missing"
 pass "package metadata is correct"
 
@@ -43,9 +37,9 @@ grep -q 'COWBOY BEBOP MANAGER' "$AUTH" || fail "Cowboy Bebop login branding miss
 grep -q 'aria-label="Cowboy Bebop"' "$LOGO" || fail "new Cowboy Bebop logo is missing"
 ! grep -q 'M24 25h48v10H35' "$LOGO" || fail "old E logo is still present"
 for number in '+20175555667' '+20 1009823007'; do
-	grep -q "$number" "$HEADER" || fail "support number missing from header: $number"
-	grep -q "$number" "$FOOTER" || fail "support number missing from footer: $number"
-	grep -q "$number" "$AUTH" || fail "support number missing from login: $number"
+  grep -q "$number" "$HEADER" || fail "support number missing from header: $number"
+  grep -q "$number" "$FOOTER" || fail "support number missing from footer: $number"
+  grep -q "$number" "$AUTH" || fail "support number missing from login: $number"
 done
 pass "private branding, logo and support numbers are preserved"
 
@@ -72,10 +66,10 @@ pass "theme activation is configured"
 
 sh -n "$ROOT/root/etc/uci-defaults/30_luci-theme-cowboy-bebop"
 if command -v node >/dev/null 2>&1; then
-	node --check "$MENU"
-	pass "menu JavaScript syntax check"
+  node --check "$MENU"
+  pass "menu JavaScript syntax check"
 else
-	echo "TEST SKIP: node is not installed; JavaScript syntax check skipped"
+  echo "TEST SKIP: node is not installed; JavaScript syntax check skipped"
 fi
 
 echo "ALL THEME TESTS PASSED"
