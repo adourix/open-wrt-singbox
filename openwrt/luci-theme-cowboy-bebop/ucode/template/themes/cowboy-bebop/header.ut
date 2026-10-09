@@ -18,7 +18,7 @@
 	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
 	<script src="{{ resource }}/cbi.js"></script>
 </head>
-<body class="lang_{{ dispatcher.lang }} {{ entityencode(striptags(node?.title ?? ''), true) }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
+<body class="{{ blank_page ? 'cb-auth' : `lang_${dispatcher.lang} ${entityencode(striptags(node?.title ?? ''), true)}` }}" data-page="{{ entityencode(join('-', length(ctx.request_path) ? ctx.request_path : ctx.path), true) }}">
 {% if (!blank_page): %}
 <header>
 	<a class="cb-brand" href="/">
