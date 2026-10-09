@@ -1,0 +1,172 @@
+/* Cowboy Bebop — restore native LuCI form controls and dropdown widgets */
+
+/* Native checkbox/radio controls must not inherit the generic text-input box model. */
+input[type="checkbox"],
+input[type="radio"] {
+	appearance: auto !important;
+	-webkit-appearance: auto !important;
+	width: 15px !important;
+	min-width: 15px !important;
+	max-width: 15px !important;
+	height: 15px !important;
+	min-height: 15px !important;
+	max-height: 15px !important;
+	margin: 0 6px 0 0 !important;
+	padding: 0 !important;
+	border: initial !important;
+	border-radius: 3px !important;
+	background: initial !important;
+	box-shadow: none !important;
+	vertical-align: middle !important;
+	cursor: pointer !important;
+	accent-color: #2563eb !important;
+}
+
+input[type="radio"] {
+	border-radius: 50% !important;
+}
+
+label {
+	cursor: pointer;
+}
+
+.cbi-value-field > label,
+.cbi-value-field label,
+.cbi-value-title + .cbi-value-field label {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	min-height: 24px !important;
+}
+
+/* LuCI's custom select/dropdown widget. The option list must be hidden until opened. */
+.cbi-dropdown:not(.btn):not(.cbi-button) {
+	position: relative !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	width: auto !important;
+	min-width: 12em !important;
+	min-height: 36px !important;
+	padding: 7px 34px 7px 10px !important;
+	border: 1px solid #c9d0d9 !important;
+	border-radius: 6px !important;
+	background: #fff !important;
+	color: #17202b !important;
+	box-shadow: none !important;
+	cursor: pointer !important;
+	vertical-align: middle !important;
+}
+
+.cbi-dropdown:not(.btn):not(.cbi-button)::after {
+	content: "" !important;
+	position: absolute !important;
+	right: 12px !important;
+	top: 50% !important;
+	width: 6px !important;
+	height: 6px !important;
+	margin-top: -4px !important;
+	border-right: 1.5px solid #667085 !important;
+	border-bottom: 1.5px solid #667085 !important;
+	transform: rotate(45deg) !important;
+	pointer-events: none !important;
+}
+
+.cbi-dropdown:not(.btn):not(.cbi-button)[open] {
+	border-color: #2563eb !important;
+	box-shadow: 0 0 0 2px rgba(37,99,235,.09) !important;
+}
+
+.cbi-dropdown:not(.btn):not(.cbi-button)[open]::after {
+	transform: rotate(225deg) !important;
+	margin-top: -1px !important;
+}
+
+/* Never let the dropdown's option list inherit generic LuCI content-list styling. */
+.cbi-dropdown > ul {
+	display: none !important;
+	position: absolute !important;
+	z-index: 2000 !important;
+	top: calc(100% + 4px) !important;
+	left: 0 !important;
+	width: max-content !important;
+	min-width: 100% !important;
+	max-width: min(420px, 80vw) !important;
+	max-height: 320px !important;
+	overflow: auto !important;
+	margin: 0 !important;
+	padding: 4px !important;
+	list-style: none !important;
+	border: 1px solid #d0d5dd !important;
+	border-radius: 7px !important;
+	background: #fff !important;
+	box-shadow: 0 8px 24px rgba(16,24,40,.12) !important;
+	box-sizing: border-box !important;
+}
+
+.cbi-dropdown[open] > ul {
+	display: block !important;
+}
+
+.cbi-dropdown > ul > li {
+	display: flex !important;
+	align-items: center !important;
+	position: relative !important;
+	min-height: 32px !important;
+	margin: 0 !important;
+	padding: 6px 9px !important;
+	list-style: none !important;
+	border: 0 !important;
+	border-radius: 5px !important;
+	background: transparent !important;
+	color: #344054 !important;
+	font-size: 12px !important;
+	line-height: 18px !important;
+	white-space: nowrap !important;
+}
+
+.cbi-dropdown > ul > li:hover {
+	background: #f3f6fa !important;
+}
+
+.cbi-dropdown > ul > li[selected],
+.cbi-dropdown > ul > li[unselectable] {
+	background: #eef4ff !important;
+	color: #2563eb !important;
+}
+
+.cbi-dropdown > ul > li > input[type="checkbox"] {
+	flex: 0 0 15px !important;
+	margin-right: 7px !important;
+}
+
+/* Prevent generic content-list rules from leaking into form controls. */
+.cbi-map .cbi-dropdown > ul,
+.cbi-section .cbi-dropdown > ul,
+.cbi-value .cbi-dropdown > ul {
+	padding-left: 4px !important;
+}
+
+.cbi-dynlist,
+.cbi-select,
+select {
+	min-height: 36px !important;
+}
+
+/* Keep disabled controls visibly disabled but still structurally intact. */
+input:disabled,
+select:disabled,
+textarea:disabled,
+.cbi-dropdown[disabled] {
+	opacity: .55 !important;
+	cursor: not-allowed !important;
+}
+
+@media (max-width: 600px) {
+	.cbi-dropdown:not(.btn):not(.cbi-button) {
+		max-width: 100% !important;
+	}
+
+	.cbi-dropdown > ul {
+		max-width: calc(100vw - 40px) !important;
+	}
+}
