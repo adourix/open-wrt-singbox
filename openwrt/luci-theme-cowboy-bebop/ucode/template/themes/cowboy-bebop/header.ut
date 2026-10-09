@@ -16,12 +16,14 @@
 	<link rel="icon" href="{{ media }}/logo.svg" type="image/svg+xml">
 	<style>
 		@media (min-width: 901px) {
-			:root { --cb-sidebar-width: 232px; --cb-topbar-height: 64px; }
-			.cb-sidebar { width: 232px; }
-			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 232px; }
+			:root { --cb-sidebar-width: 212px; --cb-topbar-height: 64px; }
+			.cb-sidebar { width: 212px; }
+			.cb-sidebar:hover, .cb-sidebar:focus-within { width: 212px; }
+			.cb-brand { width: 212px; padding-left: 16px; padding-right: 16px; }
 			.cb-sidebar .cb-brand-copy, .cb-sidebar .cb-nav-label, .cb-sidebar .cb-sidebar-footer { opacity: 1; display: block; }
 			.cb-sidebar .cb-nav-group-heading, .cb-sidebar .cb-nav-link { justify-content: flex-start; padding-left: 10px; padding-right: 10px; }
-			.cb-sidebar .cb-nav-submenu { display: block; }
+			.cb-sidebar .cb-nav-submenu { display: none; }
+			.cb-sidebar .cb-nav-group.open > .cb-nav-submenu { display: block; }
 			.cb-sidebar > nav > ul > li.active > .cb-nav-link { background: #1c2a3d; color: #fff; }
 			.cb-sidebar > nav > ul > li.active > .cb-nav-link::before { content: ""; width: 2px; height: 20px; margin-left: -10px; background: #3b82f6; border-radius: 2px; }
 		}
