@@ -7,7 +7,7 @@
 <html lang="{{ dispatcher.lang }}">
 <head>
 	<meta charset="utf-8">
-	<title>{{ striptags((dispatched?.title ? _(dispatched.title) + ' | ' : '') + 'Cowboy Bebop Manager') }}</title>
+	<title>{{ striptags((dispatched?.title ? _(dispatched.title) + ' | ' : '') + 'Cowboy Bebop') }}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="darkreader-lock">
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
@@ -23,13 +23,13 @@
 {% if (!blank_page): %}
 <aside class="cb-sidebar" id="cb-sidebar">
 	<a class="cb-brand" href="{{ dispatcher.build_url('admin/status/overview') }}" aria-label="Control Center home">
-		<span class="cb-brand-copy">COWBOY BEBOP<small>NETWORK CONTROL</small></span>
+		<img src="{{ media }}/logo.svg" alt="" width="24" height="24"><span class="cb-brand-copy">COWBOY BEBOP<small>NETWORK CONTROL</small></span>
 	</a>
 	<nav aria-label="Main navigation"><ul class="nav" id="topmenu"></ul></nav>
-	<div class="cb-sidebar-footer"><div>OpenWrt LuCI</div><div>Network Control Interface</div></div>
+	<div class="cb-sidebar-footer">OpenWrt LuCI · Network Control</div>
 </aside>
 <header class="cb-topbar">
-	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><span>COWBOY BEBOP</span></div>
+	<div class="cb-mobile-brand"><button type="button" class="cb-sidebar-toggle" aria-controls="cb-sidebar" aria-expanded="false" title="{{ _('Menu') }}">☰</button><img src="{{ media }}/logo.svg" alt="" width="22" height="22"><span>COWBOY BEBOP</span></div>
 	<div class="cb-page-title">{{ _(node?.title ?? 'Control Center') }}</div>
 </header>
 <main id="maincontent" class="container">
