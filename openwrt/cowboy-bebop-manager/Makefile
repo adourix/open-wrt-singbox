@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cowboy-bebop-manager
-PKG_RELEASE:=20
+PKG_RELEASE:=21
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Abdulrahman Ayad
 REPLACES:=singbox-manager
