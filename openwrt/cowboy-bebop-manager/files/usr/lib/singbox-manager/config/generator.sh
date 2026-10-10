@@ -1,6 +1,7 @@
 #!/bin/sh
 # Generate deterministic sing-box 1.13.x configuration from a normalized profile.
-# The generated config matches the runtime schema used by the OpenWrt service.
+# DNS remains managed by OpenWrt/system resolver in the MVP. Do not add a sing-box
+# DNS section or domain_resolver fields: tested TUN+VLESS works with system DNS.
 
 generate_config() {
     profile=$1
@@ -60,7 +61,6 @@ generate_config() {
         else null end;
       def proxy_outbound:
         ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid}
-        + {domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"}}
         + (if $p.protocol=="vmess" then {alter_id:$p.alter_id,security:$p.security}
            elif $p.flow != null then {flow:$p.flow} else {} end)
         + (if tls != null then {tls:tls} else {} end)
@@ -72,24 +72,12 @@ generate_config() {
           address:["172.19.0.1/30"], auto_route:true, auto_redirect:true,
           strict_route:true
         }],
-        dns:{
-          servers:[
-            {type:"udp",tag:"configured-dns-0",server:"1.1.1.1",server_port:53},
-            {type:"udp",tag:"configured-dns-1",server:"8.8.8.8",server_port:53}
-          ],
-          final:"configured-dns-0",
-          strategy:"ipv4_only"
-        },
         outbounds:[
           {type:"direct",tag:"direct"},
           proxy_outbound
         ],
         route:{
           auto_detect_interface:true,
-          rules:[
-            {ip_cidr:["1.1.1.1/32","8.8.8.8/32"],outbound:"direct"}
-          ],
-          default_domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"},
           final:"proxy-out"
         }
       }'
