@@ -20,8 +20,7 @@ printf '%s\n' "$out" | jq -e '
   and .outbounds[1].server=="example.com"
   and .outbounds[1].server_port==443
   and .outbounds[1].uuid=="550e8400-e29b-41d4-a716-446655440000"
-  and .outbounds[1].domain_resolver.server=="configured-dns-0"
-  and .outbounds[1].domain_resolver.strategy=="ipv4_only"
+  and (.outbounds[1].domain_resolver|not)
   and .outbounds[1].tls.enabled==true
   and .outbounds[1].tls.server_name=="example.com"
   and .outbounds[1].tls.insecure==true
@@ -34,19 +33,18 @@ printf '%s\n' "$out" | jq -e '
   and .inbounds[0].auto_route==true
   and .inbounds[0].auto_redirect==true
   and .inbounds[0].strict_route==true
-  and .dns.servers[0].type=="udp"
-  and .dns.servers[0].server=="1.1.1.1"
-  and .dns.servers[1].server=="8.8.8.8"
-  and .dns.final=="configured-dns-0"
-  and .dns.strategy=="ipv4_only"
+  and (.dns|not)
   and .route.auto_detect_interface==true
-  and .route.rules[0].ip_cidr[0]=="1.1.1.1/32"
-  and .route.rules[0].ip_cidr[1]=="8.8.8.8/32"
-  and .route.rules[0].outbound=="direct"
-  and .route.default_domain_resolver.server=="configured-dns-0"
-  and .route.default_domain_resolver.strategy=="ipv4_only"
+  and (.route.rules|not)
+  and (.route.default_domain_resolver|not)
   and .route.final=="proxy-out"
 ' >/dev/null || fail "VLESS generation"
+
+# TCP VLESS should omit transport; it must not emit an invalid "tcp" transport.
+tcp_profile=$(printf '%s' "$profile" | jq '.transport.type="tcp"')
+tcp_out=$(generate_config "$tcp_profile")
+printf '%s\n' "$tcp_out" | jq -e '(.outbounds[1].transport|not) and (.dns|not)' >/dev/null || fail "TCP VLESS generation"
+
 bad='{"schema_version":1,"protocol":"trojan"}'
 if generate_config "$bad" >/dev/null 2>/dev/null; then fail "invalid protocol accepted"; fi
 bad_transport=$(printf '%s' "$profile" | jq '.transport.type="xhttp"')
