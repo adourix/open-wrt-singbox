@@ -10,7 +10,23 @@ permissions:
 
 jobs:
   shell-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - tests/config/test_generator.sh
+          - tests/config/test_runtime_policy.sh
+          - tests/config/test_validator.sh
+          - tests/config/test_version.sh
+          - tests/luci/test_ui_contract.sh
+          - tests/network/test_firewall.sh
+          - tests/protocol/test_detector.sh
+          - tests/service/test_init_contract.sh
+          - tests/service/test_manager_contract.sh
+          - tests/vless/test_parser.sh
+          - tests/vmess/test_parser.sh
     runs-on: ubuntu-24.04
+    name: ${{ matrix.test }}
     steps:
       - uses: actions/checkout@v4
       - name: Install test dependencies
@@ -19,10 +35,5 @@ jobs:
         run: |
           set -eu
           find core openwrt/cowboy-bebop-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
-      - name: Contract tests
-        run: |
-          set -eu
-          for test in $(find tests -type f -name 'test_*.sh' | sort); do
-            echo "==> $test"
-            sh "$test"
-          done
+      - name: Run contract test
+        run: sh "${{ matrix.test }}"
