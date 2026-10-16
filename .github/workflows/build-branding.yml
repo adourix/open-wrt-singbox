@@ -55,7 +55,6 @@ jobs:
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-branding" package/cowboy-bebop-branding
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Verify package metadata
         run: |
           set -eu
@@ -147,7 +146,6 @@ jobs:
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-branding" package/cowboy-bebop-branding
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Verify package metadata
         run: |
           set -eu
