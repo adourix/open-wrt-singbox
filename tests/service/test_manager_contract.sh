@@ -3,7 +3,7 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 MANAGER="$ROOT/core/service/manager.sh"
-MIRROR="$ROOT/openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"
+MIRROR="$ROOT/openwrt/cowboy-bebop-manager/files/usr/lib/cowboy-bebop/service/manager.sh"
 PACKAGE="$ROOT/openwrt/cowboy-bebop-manager/Makefile"
 
 # Core and packaged managers must preserve the same critical runtime contract.
@@ -39,6 +39,10 @@ if grep -F 'EXTRA_DEPENDS:=' "$PACKAGE" >/dev/null; then
     exit 1
 fi
 
-grep -F 'PKG_RELEASE:=18' "$PACKAGE" >/dev/null
+grep -F 'PKG_RELEASE:=22' "$PACKAGE" >/dev/null
+
+grep -F './files/usr/lib/cowboy-bebop/service/manager.sh' "$PACKAGE" >/dev/null
+! grep -F './files/usr/lib/singbox-manager/' "$PACKAGE" >/dev/null
+! grep -F './files/etc/init.d/singbox' "$PACKAGE" >/dev/null
 
 printf '%s\n' 'manager lifecycle contract tests: PASS'
