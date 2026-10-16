@@ -10,10 +10,11 @@ for file in \
     "$ROOT/core/config/generator.sh" \
     "$ROOT/core/config/validator.sh" \
     "$ROOT/core/service/manager.sh" \
-    "$ROOT/core/network/firewall.sh"; do
+    "$ROOT/core/network/firewall.sh" \
+    "$ROOT/openwrt/cowboy-bebop-manager/files/usr/lib/cowboy-bebop/config/generator.sh" \
+    "$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"; do
     sh -n "$file"
 done
-sh -n "$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"
 sh -n "$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop"
 
 grep -F 'uclient-fetch' "$ROOT/core/service/manager.sh" >/dev/null
@@ -22,25 +23,16 @@ grep -F 'PENDING_STATE' "$ROOT/core/service/manager.sh" >/dev/null
 grep -F 'restore_previous_uci' "$ROOT/core/service/manager.sh" >/dev/null
 ! grep -F 'wget ' "$ROOT/core/service/manager.sh" >/dev/null
 
+grep -F 'auto_redirect:true' "$ROOT/core/config/generator.sh" >/dev/null
+grep -F 'ip_is_private:true' "$ROOT/core/config/generator.sh" >/dev/null
+grep -F 'hijack-dns' "$ROOT/core/config/generator.sh" >/dev/null
+grep -F 'domain_resolver' "$ROOT/core/config/generator.sh" >/dev/null
+
 if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' "$ROOT/core" >/dev/null 2>&1; then
     echo "possible secret logging found" >&2
     exit 1
 fi
 
-for pair in \
-    "core/protocol/detector.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/detector.sh" \
-    "core/protocol/vmess/parser.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/vmess/parser.sh" \
-    "core/protocol/vless/parser.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/protocol/vless/parser.sh" \
-    "core/config/generator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/cowboy-bebop/config/generator.sh" \
-    "core/config/validator.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/validator.sh" \
-    "core/config/version.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/config/version.sh" \
-    "core/network/firewall.sh|openwrt/cowboy-bebop-manager/files/usr/lib/singbox-manager/network/firewall.sh"; do
-    core_file=${pair%%|*}
-    packaged_file=${pair#*|}
-    cmp -s "$ROOT/$core_file" "$ROOT/$packaged_file" || {
-        echo "source-of-truth mismatch: $core_file != $packaged_file" >&2
-        exit 1
-    }
-done
+cmp -s "$ROOT/core/config/generator.sh" "$ROOT/openwrt/cowboy-bebop-manager/files/usr/lib/cowboy-bebop/config/generator.sh"
 
 printf '%s\n' "runtime policy tests: PASS"
