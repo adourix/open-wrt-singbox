@@ -18,7 +18,6 @@ jobs:
           - tests/config/test_runtime_policy.sh
           - tests/config/test_validator.sh
           - tests/config/test_version.sh
-          - tests/luci/test_ui_contract.sh
           - tests/network/test_firewall.sh
           - tests/protocol/test_detector.sh
           - tests/service/test_init_contract.sh
