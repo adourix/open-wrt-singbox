@@ -2,7 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-INIT="$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"
+INIT="$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/cowboy-bebop"
 
 # Boot recovery must never leave an unconfirmed first-time config active when
 # there is no valid known-good backup.
@@ -25,5 +25,8 @@ grep -F '"$FIREWALL" cleanup' "$INIT" >/dev/null
 
 # Normal stop must remove project-owned firewall state.
 grep -F 'firewall cleanup failed' "$INIT" >/dev/null
+
+grep -F 'procd_set_param respawn' "$INIT" >/dev/null
+grep -F 'procd_set_param command "$PROG" run -c "$CONFIG"' "$INIT" >/dev/null
 
 printf '%s\n' 'init recovery contract tests: PASS'
