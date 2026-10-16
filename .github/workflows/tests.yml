@@ -1,0 +1,28 @@
+name: Shell Contract Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Syntax checks
+        run: |
+          set -eu
+          find core openwrt/cowboy-bebop-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
+      - name: Contract tests
+        run: |
+          set -eu
+          for test in $(find tests -type f -name 'test_*.sh' | sort); do
+            echo "==> $test"
+            sh "$test"
+          done
