@@ -1,7 +1,7 @@
 #!/bin/sh
 # Generate deterministic sing-box 1.13.x configuration from a normalized profile.
-# DNS remains managed by OpenWrt/system resolver in the MVP. Do not add a sing-box
-# DNS section or domain_resolver fields: tested TUN+VLESS works with system DNS.
+# The MVP keeps DNS inside sing-box, resolves the proxy endpoint directly, and
+# sends private/router traffic directly so the router cannot proxy itself.
 
 generate_config() {
     profile=$1
@@ -60,16 +60,24 @@ generate_config() {
           {type:"grpc",service_name:$p.transport.service_name}
         else null end;
       def proxy_outbound:
-        ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid}
+        ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid,domain_resolver:{server:"dns-1",strategy:"ipv4_only"}}
         + (if $p.protocol=="vmess" then {alter_id:$p.alter_id,security:$p.security}
            elif $p.flow != null then {flow:$p.flow} else {} end)
         + (if tls != null then {tls:tls} else {} end)
         + (if transport != null then {transport:transport} else {} end));
       {
-        log:{level:"info"},
+        log:{level:"warn"},
+        dns:{
+          servers:[
+            {type:"udp",tag:"dns-1",server:"1.1.1.1",server_port:53,detour:"direct"},
+            {type:"udp",tag:"dns-2",server:"8.8.8.8",server_port:53,detour:"direct"}
+          ],
+          final:"dns-1",
+          strategy:"ipv4_only"
+        },
         inbounds:[{
-          type:"tun", tag:"tun-in", interface_name:"tun0",
-          address:["172.19.0.1/30"], auto_route:true, auto_redirect:true,
+          type:"tun",tag:"tun-in",interface_name:"tun0",
+          address:["172.19.0.1/30"],auto_route:true,auto_redirect:true,
           strict_route:true
         }],
         outbounds:[
@@ -78,6 +86,12 @@ generate_config() {
         ],
         route:{
           auto_detect_interface:true,
+          default_domain_resolver:{server:"dns-1",strategy:"ipv4_only"},
+          rules:[
+            {ip_cidr:["1.1.1.1/32","8.8.8.8/32"],action:"route",outbound:"direct"},
+            {ip_is_private:true,action:"route",outbound:"direct"},
+            {network:["udp","tcp"],port:53,action:"hijack-dns"}
+          ],
           final:"proxy-out"
         }
       }'
