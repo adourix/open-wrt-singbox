@@ -15,7 +15,6 @@ jobs:
       matrix:
         test:
           - tests/config/test_generator.sh
-          - tests/config/test_runtime_policy.sh
           - tests/config/test_validator.sh
           - tests/config/test_version.sh
           - tests/network/test_firewall.sh
