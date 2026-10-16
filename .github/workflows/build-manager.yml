@@ -50,16 +50,11 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only: this package only copies files (empty Build/Compile).
-          # Installed feed packages would become build dependencies, and the
-          # SDK would compile sing-box-tiny (a long Go build) for nothing.
-          # They stay runtime dependencies that apk resolves on the router.
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
       - name: Copy package
         run: |
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" "$SDK_DIR/package/cowboy-bebop-manager"
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" "$SDK_DIR/package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh"
       - name: Verify package
         run: |
           set -eu
@@ -67,6 +62,7 @@ jobs:
           make defconfig
           test -f package/cowboy-bebop-manager/Makefile
           grep -q '^PKG_NAME:=cowboy-bebop-manager$' package/cowboy-bebop-manager/Makefile
+          grep -q '^DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag$' package/cowboy-bebop-manager/Makefile
       - name: Build package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -79,7 +75,6 @@ jobs:
             echo "::group::First attempt failed (feeds not installed) - context before the first failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
             echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
             ./scripts/feeds install -a
             if ! build >> "$LOG" 2>&1; then
               echo "::group::Second attempt failed - end of log"
@@ -156,14 +151,9 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only: this package only copies files (empty Build/Compile).
-          # Installed feed packages would become build dependencies, and the
-          # SDK would compile sing-box-tiny (a long Go build) for nothing.
-          # They stay runtime dependencies that apk resolves on the router.
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Build package
         env:
           CMAKE_POLICY_VERSION_MINIMUM: "3.5"
@@ -176,7 +166,6 @@ jobs:
             echo "::group::First attempt failed (feeds not installed) - context before the first failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
             echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
             ./scripts/feeds install -a
             if ! build >> "$LOG" 2>&1; then
               echo "::group::Second attempt failed - end of log"
