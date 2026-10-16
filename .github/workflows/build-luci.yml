@@ -50,14 +50,10 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only: nothing from the feeds needs to be compiled for this
-          # package (the Makefile only copies files). Installed feed packages
-          # would become build dependencies (sing-box-tiny is a long Go build).
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Verify package metadata
         run: |
           set -eu
@@ -77,7 +73,6 @@ jobs:
             echo "::group::First attempt failed (feeds not installed) - context before the first failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
             echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
             ./scripts/feeds install -a
             if ! build >> "$LOG" 2>&1; then
               echo "::group::Second attempt failed - end of log"
@@ -154,14 +149,10 @@ jobs:
         run: |
           set -eu
           cd "$SDK_DIR"
-          # Update only: nothing from the feeds needs to be compiled for this
-          # package (the Makefile only copies files). Installed feed packages
-          # would become build dependencies (sing-box-tiny is a long Go build).
           ./scripts/feeds update packages
           test -f feeds/packages/net/sing-box/Makefile
           cp -a "$GITHUB_WORKSPACE/openwrt/cowboy-bebop-manager" package/cowboy-bebop-manager
           cp -a "$GITHUB_WORKSPACE/openwrt/luci-app-cowboy-bebop" package/luci-app-cowboy-bebop
-          cp "$GITHUB_WORKSPACE/core/service/manager.sh" package/cowboy-bebop-manager/files/usr/lib/singbox-manager/service/manager.sh
       - name: Verify package metadata
         run: |
           set -eu
@@ -181,7 +172,6 @@ jobs:
             echo "::group::First attempt failed (feeds not installed) - context before the first failure"
             grep -n -m1 -B40 '\*\*\*' "$LOG" || tail -n 120 "$LOG"
             echo "::endgroup::"
-            echo "Retrying once with the packages feed installed"
             ./scripts/feeds install -a
             if ! build >> "$LOG" 2>&1; then
               echo "::group::Second attempt failed - end of log"
