@@ -7,6 +7,26 @@ VLESS_ALLOW_INSECURE=${VLESS_ALLOW_INSECURE:-1}
 
 vless_error() { printf '%s\n' "$1" >&2; return 1; }
 
+# Normalize an Xray-style certificate pin list (share-link "pcs"): comma
+# separated SHA-256 hashes of the leaf certificate, hex, optional colons.
+# Prints one lowercase 64-hex hash per line.
+_vless_pins() {
+    printf '%s\n' "$1" | tr ',' '\n' | tr -d ': \t' | tr 'ABCDEF' 'abcdef' | awk '
+        length($0)==0 { next }
+        $0 !~ /^[0-9a-f]+$/ || length($0)!=64 { bad=1; exit }
+        { print }
+        END { if (bad) exit 1 }'
+}
+
+# Normalize a certificate name list (share-link "vcn"). Prints one name per line.
+_vless_names() {
+    printf '%s\n' "$1" | tr ',' '\n' | tr -d ' \t' | awk '
+        length($0)==0 { next }
+        $0 !~ /^[A-Za-z0-9*][A-Za-z0-9.*-]*$/ || length($0)>253 { bad=1; exit }
+        { print tolower($0) }
+        END { if (bad) exit 1 }'
+}
+
 _vless_urldecode() {
     LC_ALL=C printf '%s\n' "$1" | awk '
     function hv(c) { return index("0123456789abcdef",tolower(c))-1 }
@@ -79,7 +99,8 @@ vless_parse() (
         { vless_error "Invalid VLESS port"; return 1; }
 
     type= security= sni= host= path= service_name= flow= fp= pbk= sid= alpn= encryption= insecure=
-    for key in type security sni host path serviceName flow fp pbk sid alpn encryption allowInsecure insecure; do
+    header_type='' pcs='' vcn=''
+    for key in type security sni host path serviceName flow fp pbk sid alpn encryption allowInsecure insecure headerType pcs vcn; do
         raw=$( _vless_param "$key" "$query" 2>/dev/null ) || continue
         value=$( _vless_urldecode "$raw" ) || { vless_error "Invalid URL encoding"; return 1; }
         case "$key" in
@@ -87,6 +108,7 @@ vless_parse() (
             path) path=$value;; serviceName) service_name=$value;; flow) flow=$value;; fp) fp=$value;;
             pbk) pbk=$value;; sid) sid=$value;; alpn) alpn=$value;; encryption) encryption=$value;;
             allowInsecure|insecure) insecure=$value;;
+            headerType) header_type=$value;; pcs) pcs=$value;; vcn) vcn=$value;;
         esac
     done
 
@@ -102,12 +124,29 @@ vless_parse() (
         1|true|yes)
             [ "$security" = "tls" ] || [ "$security" = "reality" ] ||
                 { vless_error "Insecure TLS requires TLS or Reality"; return 1; }
+            case "$VLESS_ALLOW_INSECURE" in 1|yes|true) ;; *) vless_error "Insecure TLS is disabled by policy"; return 1;; esac
             insecure_json=true ;;
         0|false|no|"") ;;
         *) vless_error "Invalid insecure option"; return 1;;
     esac
 
     case "$type" in ""|tcp|ws|grpc) ;; *) vless_error "Unsupported transport"; return 1;; esac
+    # Xray TCP "http" header obfuscation has no sing-box equivalent.
+    case "$type" in ""|tcp) case "$header_type" in ""|none) ;; *) vless_error "Unsupported transport"; return 1;; esac;; esac
+
+    # Certificate pin (pcs) and verification name (vcn) only apply to plain TLS.
+    # Reality has no CA certificate, so both are ignored there.
+    pins_json=null names_json=null
+    if [ "$security" = "tls" ]; then
+        if [ -n "$pcs" ]; then
+            pins=$(_vless_pins "$pcs") || { vless_error "Invalid certificate pin"; return 1; }
+            [ -z "$pins" ] || pins_json=$(printf '%s\n' "$pins" | jq -Rsc 'split("\n")|map(select(length>0))')
+        fi
+        if [ -n "$vcn" ]; then
+            names=$(_vless_names "$vcn") || { vless_error "Invalid certificate name"; return 1; }
+            [ -z "$names" ] || names_json=$(printf '%s\n' "$names" | jq -Rsc 'split("\n")|map(select(length>0))')
+        fi
+    fi
     if [ "$security" = "reality" ]; then
         [ -n "$pbk" ] || { vless_error "Missing Reality public key"; return 1; }
         [ -n "$sid" ] || { vless_error "Missing Reality short ID"; return 1; }
@@ -130,7 +169,8 @@ vless_parse() (
       --arg flow "$flow" --arg security "$security" --arg sni "$sni" --arg type "$type" \
       --arg path "$path" --arg host "$host" --arg service_name "$service_name" --arg fp "$fp" \
       --arg pbk "$pbk" --arg sid "$sid" --arg alpn "$alpn" --arg name "$name" \
-      --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" '
+      --argjson tls_enabled "$tls_enabled" --argjson insecure "$insecure_json" \
+      --argjson pins "$pins_json" --argjson names "$names_json" '
       {
         schema_version:1, protocol:$protocol, server:$server, server_port:$server_port, uuid:$uuid,
         flow:(if $flow!="" then $flow else null end),
@@ -140,7 +180,9 @@ vless_parse() (
           insecure:$insecure,
           utls:(if $fp!="" then {enabled:true,fingerprint:$fp} else null end),
           reality:(if $security=="reality" then {enabled:true,public_key:$pbk,short_id:$sid} else null end),
-          alpn:(if $alpn!="" then ($alpn|split(",")) else null end)
+          alpn:(if $alpn!="" then ($alpn|split(",")) else null end),
+          pinned_cert_sha256:$pins,
+          verify_names:$names
         },
         transport:(
           if $type=="ws" then {type:"ws",path:$path,headers:(if $host!="" then {Host:$host} else {} end)}

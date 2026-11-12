@@ -1,0 +1,95 @@
+#!/bin/sh /etc/rc.common
+# Remove third-party reseller identity (for example a reseller name and phone
+# number injected into the board model string or a reseller LuCI theme) from
+# what the router shows. Descriptive text only: board_name, DISTRIB_* IDs and
+# the package architecture are never touched. Idempotent; safe to run twice.
+
+START=11
+
+VENDOR_RE='bass?em([^a-z]|lg|$)'
+# Filesystem prefix; only set by the test suite.
+R=${IDENTITY_ROOT:-}
+
+log_identity() { logger -t cowboy-bebop-identity "$1"; }
+
+has_vendor() { printf '%s' "$1" | grep -qiE "$VENDOR_RE"; }
+has_phone() { printf '%s' "$1" | grep -qE '\([[:space:]]*\+?[0-9][0-9 -]{6,}\)'; }
+
+# "KT-708 <emoji>BASEM LG<emoji> (+20...)" -> "KT-708"
+clean_model() {
+	printf '%s' "$1" | LC_ALL=C tr -c ' -~' ' ' | sed -E \
+		-e 's/[Bb][Aa][Ss][Ss]?[Ee][Mm][[:space:]_-]*([Ll][Gg])?//g' \
+		-e 's/\([[:space:]]*\+?[0-9][0-9 -]{6,}\)//g' \
+		-e 's/[[:space:]]+/ /g' -e 's/^ //' -e 's/ $//'
+}
+
+clean_board_model() {
+	if [ -f "$R/tmp/sysinfo/model" ]; then
+		model=$(cat "$R/tmp/sysinfo/model")
+		if has_vendor "$model" || has_phone "$model"; then
+			cleaned=$(clean_model "$model")
+			if [ -n "$cleaned" ] && [ "$cleaned" != "$model" ]; then
+				printf '%s\n' "$cleaned" > "$R/tmp/sysinfo/model"
+				log_identity 'removed reseller text from board model'
+			fi
+		fi
+	fi
+
+	[ -f "$R/etc/board.json" ] && command -v jq >/dev/null 2>&1 || return 0
+	name=$(jq -r '.model.name // empty' "$R/etc/board.json" 2>/dev/null)
+	[ -n "$name" ] || return 0
+	has_vendor "$name" || has_phone "$name" || return 0
+	cleaned=$(clean_model "$name")
+	[ -n "$cleaned" ] && [ "$cleaned" != "$name" ] || return 0
+	[ -f "$R/etc/board.json.vendor" ] || cp -p "$R/etc/board.json" "$R/etc/board.json.vendor"
+	jq --arg n "$cleaned" '.model.name=$n' "$R/etc/board.json" > "$R/etc/board.json.tmp" &&
+		mv "$R/etc/board.json.tmp" "$R/etc/board.json"
+}
+
+clean_system_text() {
+	changed=0
+	for opt in description notes; do
+		value=$(uci -q get "system.@system[0].$opt")
+		[ -n "$value" ] && has_vendor "$value" || continue
+		uci -q delete "system.@system[0].$opt" && changed=1
+	done
+	[ "$changed" -eq 0 ] || { uci -q commit system; log_identity 'removed reseller text from system description'; }
+}
+
+theme_has_vendor() {
+	base=$1; name=${base##*/}
+	for dir in "$R/www$base" "$R/usr/share/ucode/luci/template/themes/$name" "$R/usr/lib/lua/luci/view/themes/$name"; do
+		[ -d "$dir" ] || continue
+		grep -rqaiE "$VENDOR_RE" "$dir" 2>/dev/null && return 0
+		[ -z "$(find "$dir" -iname '*basem*' 2>/dev/null | head -n 1)" ] || return 0
+	done
+	return 1
+}
+
+clean_luci_theme() {
+	base=$(uci -q get luci.main.mediaurlbase)
+	[ -n "$base" ] || return 0
+	# Former Cowboy Bebop theme removed: never leave a dangling theme.
+	if [ "$base" = /luci-static/cowboy-bebop ] && [ ! -d "$R/www/luci-static/cowboy-bebop" ]; then
+		:
+	elif ! theme_has_vendor "$base"; then
+		return 0
+	fi
+	for fallback in bootstrap openwrt2020 material; do
+		[ "/luci-static/$fallback" != "$base" ] || continue
+		[ -d "$R/www/luci-static/$fallback" ] || continue
+		uci -q set luci.main.mediaurlbase="/luci-static/$fallback"
+		uci -q commit luci
+		rm -rf "$R"/tmp/luci-indexcache* "$R/tmp/luci-modulecache" 2>/dev/null
+		log_identity "switched LuCI theme from $base to /luci-static/$fallback"
+		return 0
+	done
+	log_identity "reseller LuCI theme $base detected but no stock theme is installed"
+}
+
+start() {
+	clean_board_model
+	clean_system_text
+	clean_luci_theme
+	return 0
+}

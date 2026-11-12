@@ -8,7 +8,7 @@ case "${-}" in *i*) ;; *) return 0 ;; esac
 
 _cb_enabled="$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)"
 _cb_tun="down"
-[ -d /sys/class/net/singtun0 ] && _cb_tun="up"
+[ -d /sys/class/net/tun0 ] && _cb_tun="up"
 
 case "$_cb_enabled" in
   1|yes|true) _cb_proxy="ON" ;;

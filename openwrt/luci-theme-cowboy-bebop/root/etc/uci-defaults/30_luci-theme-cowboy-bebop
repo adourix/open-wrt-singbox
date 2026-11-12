@@ -1,6 +1,0 @@
-#!/bin/sh
-# Register the optional theme, but do not change mediaurlbase or main.theme.
-uci -q set luci.themes.CowboyBebop=/luci-static/cowboy-bebop 2>/dev/null || true
-uci -q commit luci 2>/dev/null || true
-rm -f /tmp/luci-indexcache.* /tmp/luci-modulecache/* 2>/dev/null || true
-exit 0

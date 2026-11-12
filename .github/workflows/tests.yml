@@ -8,30 +8,71 @@ on:
 permissions:
   contents: read
 
+env:
+  SINGBOX_VERSION: "1.13.21"
+
 jobs:
   shell-tests:
     strategy:
       fail-fast: false
       matrix:
+        shell: [sh, "busybox sh"]
         test:
+          - tests/branding/test_identity.sh
           - tests/config/test_generator.sh
+          - tests/config/test_runtime_policy.sh
           - tests/config/test_validator.sh
           - tests/config/test_version.sh
+          - tests/luci/test_ui_contract.sh
           - tests/network/test_firewall.sh
           - tests/protocol/test_detector.sh
           - tests/service/test_init_contract.sh
           - tests/service/test_manager_contract.sh
+          - tests/service/test_package_layout.sh
+          - tests/service/test_tls_pin.sh
           - tests/vless/test_parser.sh
           - tests/vmess/test_parser.sh
     runs-on: ubuntu-24.04
-    name: ${{ matrix.test }}
+    name: ${{ matrix.test }} (${{ matrix.shell }})
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq busybox openssl
+      - name: Syntax checks
+        run: |
+          set -eu
+          find core openwrt -type f \( -name '*.sh' -o -path '*/init.d/*' -o -path '*/uci-defaults/*' -o -path '*/rpcd/*' \) -print0 | xargs -0 -n1 sh -n
+      - name: Run contract test
+        run: ${{ matrix.shell }} "${{ matrix.test }}"
+
+  singbox-check:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install test dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
-      - name: Syntax checks
+      - name: Download pinned sing-box
         run: |
           set -eu
-          find core openwrt/cowboy-bebop-manager/files -type f -name '*.sh' -print0 | xargs -0 -n1 sh -n
-      - name: Run contract test
-        run: sh "${{ matrix.test }}"
+          f="sing-box-${SINGBOX_VERSION}-linux-amd64"
+          wget -q "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/${f}.tar.gz"
+          tar xzf "${f}.tar.gz"
+          echo "SINGBOX_BIN=$PWD/${f}/sing-box" >> "$GITHUB_ENV"
+      - name: sing-box check of generated configs
+        run: sh tests/integration/test_singbox_check.sh
+
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck (errors)
+        run: |
+          set -eu
+          shellcheck -s sh -S error \
+            core/*/*.sh core/protocol/*/*.sh tests/*/*.sh \
+            openwrt/cowboy-bebop-manager/files/etc/init.d/cowboy-bebop \
+            openwrt/cowboy-bebop-manager/files/usr/bin/cowboy-bebop-manager \
+            openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop \
+            openwrt/cowboy-bebop-branding/files/etc/init.d/cowboy-bebop-identity \
+            openwrt/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding \
+            openwrt/cowboy-bebop-branding/files/etc/profile.d/cowboy-bebop.sh

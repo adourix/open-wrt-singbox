@@ -31,7 +31,7 @@ rpcd -> cowboy-bebop
           v
       sing-box 1.13.21
           |
-       singtun0
+       tun0
 ```
 
 Project-specific paths:

@@ -2,7 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-INIT="$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"
+INIT="$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/cowboy-bebop"
 
 grep -F 'pending configuration has no valid backup; disabling Cowboy Bebop safely' "$INIT" >/dev/null
 grep -F 'rm -f "$CONFIG" "$CANDIDATE"' "$INIT" >/dev/null

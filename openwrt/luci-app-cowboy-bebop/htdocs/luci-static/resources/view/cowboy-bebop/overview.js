@@ -19,6 +19,37 @@ function errorText(result, fallback) {
 	return result && result.error ? result.error : fallback;
 }
 
+/* Self-contained styling: the page works with any LuCI theme (bootstrap,
+ * material, openwrt2020, ...) and does not depend on a custom theme package. */
+var PAGE_CSS = [
+	'.cb-manager-page{max-width:960px}',
+	'.cb-manager-hero h1{margin:.2em 0;font-size:1.6em}',
+	'.cb-manager-hero p{opacity:.75;margin:0 0 1em}',
+	'.cb-kicker{font-size:.75em;letter-spacing:.12em;opacity:.6;font-weight:600}',
+	'.cb-config-card textarea{width:100%;box-sizing:border-box;font-family:monospace;min-height:5em}',
+	'.cb-input-note{font-size:.85em;opacity:.7;margin:.25em 0 .5em}',
+	'.cb-config-card .cbi-page-actions{display:flex;flex-wrap:wrap;gap:.5em;justify-content:flex-start;padding:.75em 0 0;margin:0;background:none;border:0}',
+	'.cb-status-hero{padding:.75em 1em;border-radius:6px;border-left:4px solid #888;background:rgba(127,127,127,.08);margin-bottom:.75em}',
+	'.cb-status-success{border-left-color:#2e9d50}.cb-status-warning{border-left-color:#d79a10}.cb-status-error{border-left-color:#d03b3b}.cb-status-neutral{border-left-color:#7a8594}',
+	'.cb-status-label{font-weight:700;font-size:1.15em}.cb-status-subtitle{opacity:.75}',
+	'.cb-status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.5em}',
+	'.cb-status-item,.cb-profile-row{display:flex;justify-content:space-between;gap:1em;padding:.4em .6em;border-radius:4px;background:rgba(127,127,127,.06);word-break:break-all}',
+	'.cb-status-item span,.cb-profile-row span{opacity:.7}',
+	'.cb-profile-title{font-weight:600;margin-bottom:.4em}',
+	'.cb-profile-row{margin-bottom:.3em}'
+].join('\n');
+
+function certificateLabel(value) {
+	switch (value) {
+	case 'pinned': return _('Pinned certificate');
+	case 'not verified': return _('Not verified');
+	case 'custom name': return _('Custom name');
+	case 'reality': return _('Reality');
+	case 'verified': return _('Verified');
+	default: return value || '-';
+	}
+}
+
 return view.extend({
 	load: function() {
 		return Promise.all([callStatus(), callLogs()]);
@@ -89,6 +120,8 @@ return view.extend({
 			if (status.server_port) fields.push(['Port', status.server_port]);
 			if (status.transport) fields.push(['Transport', status.transport]);
 			if (status.protocol) fields.push(['TLS', status.tls ? 'Enabled' : 'Disabled']);
+			if (status.sni) fields.push(['SNI', status.sni]);
+			if (status.certificate) fields.push(['Certificate', certificateLabel(status.certificate)]);
 
 			var grid = E('div', { class: 'cb-status-grid' });
 			fields.forEach(function(field) {
@@ -135,7 +168,7 @@ return view.extend({
 				if (!result || result.ok === false) throw new Error(errorText(result, _('Invalid or unsupported proxy URL.')));
 				previewBox.innerHTML = '';
 				previewBox.appendChild(E('div', { class: 'cb-profile-title' }, [_('Detected profile')]));
-				[['Protocol', result.protocol], ['Server', result.server], ['Port', result.server_port], ['Transport', result.transport], ['TLS', result.tls ? 'Enabled' : 'Disabled'], ['Name', result.name || '-']].forEach(function(field) {
+				[['Protocol', result.protocol], ['Server', result.server], ['Port', result.server_port], ['Transport', result.transport], ['TLS', result.tls ? 'Enabled' : 'Disabled'], ['SNI', result.sni || '-'], ['Certificate', result.tls ? certificateLabel(result.certificate) : '-'], ['Name', result.name || '-']].forEach(function(field) {
 					previewBox.appendChild(E('div', { class: 'cb-profile-row' }, [
 						E('span', {}, [_(field[0])]),
 						E('strong', {}, [document.createTextNode(String(field[1]))])
@@ -204,6 +237,7 @@ return view.extend({
 		});
 
 		var page = E('div', { class: 'cb-manager-page' }, [
+			E('style', {}, [PAGE_CSS]),
 			E('section', { class: 'cb-manager-hero' }, [
 				E('div', {}, [
 					E('div', { class: 'cb-kicker' }, [_('TUNNEL CONTROL')]),

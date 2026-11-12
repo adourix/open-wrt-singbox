@@ -14,6 +14,8 @@ FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
 ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
 CONNECTIVITY_TIMEOUT=${CONNECTIVITY_TIMEOUT:-8}
 CONNECTIVITY_TRIES=${CONNECTIVITY_TRIES:-2}
+PIN_TIMEOUT=${PIN_TIMEOUT:-8}
+OPENSSL_BIN=${OPENSSL_BIN:-openssl}
 
 load_core() {
     . "$MANAGER_LIB/protocol/detector.sh" || return 1
@@ -102,6 +104,80 @@ runtime_failure() {
     return 0
 }
 verify_runtime() { sleep 1; runtime_failure; }
+
+# Run a command with a wall-clock limit; busybox may not ship `timeout`.
+run_with_timeout() {
+    limit=$1; shift
+    "$@" &
+    cmd_pid=$!
+    ( sleep "$limit"; kill "$cmd_pid" 2>/dev/null ) >/dev/null 2>&1 &
+    timer_pid=$!
+    wait "$cmd_pid"; cmd_rc=$?
+    kill "$timer_pid" 2>/dev/null; wait "$timer_pid" 2>/dev/null
+    return "$cmd_rc"
+}
+
+# Translate an Xray certificate pin (SHA-256 of the whole leaf certificate)
+# into the public-key pin sing-box understands. The leaf certificate is fetched
+# once at apply time and only used if its hash matches one of the pins.
+# stdout: base64 public-key SHA-256. rc 0 match, 1 cannot check, 2 mismatch.
+resolve_spki_pin() {
+    command -v "$OPENSSL_BIN" >/dev/null 2>&1 || return 1
+    pin_profile=$1
+    pin_server=$(printf '%s' "$pin_profile" | jq -r '.server') || return 1
+    pin_port=$(printf '%s' "$pin_profile" | jq -r '.server_port') || return 1
+    pin_sni=$(printf '%s' "$pin_profile" | jq -r '.tls.server_name // empty')
+    pin_alpn=$(printf '%s' "$pin_profile" | jq -r '(.tls.alpn // []) | join(",")')
+    case "$pin_server" in *:*) pin_target="[$pin_server]:$pin_port" ;; *) pin_target="$pin_server:$pin_port" ;; esac
+    umask 077
+    mkdir -p "$CONFIG_DIR" || return 1
+    pin_cert=$(mktemp "$CONFIG_DIR/.peer.XXXXXX") || return 1
+    set -- s_client -connect "$pin_target"
+    [ -z "$pin_sni" ] || set -- "$@" -servername "$pin_sni"
+    [ -z "$pin_alpn" ] || set -- "$@" -alpn "$pin_alpn"
+    if ! run_with_timeout "$PIN_TIMEOUT" "$OPENSSL_BIN" "$@" </dev/null >"$pin_cert" 2>/dev/null ||
+       ! grep -q 'BEGIN CERTIFICATE' "$pin_cert"; then
+        rm -f "$pin_cert"; return 1
+    fi
+    pin_actual=$("$OPENSSL_BIN" x509 -in "$pin_cert" -outform der 2>/dev/null | "$OPENSSL_BIN" dgst -sha256 -r 2>/dev/null | awk '{print tolower($1)}')
+    pin_spki=$("$OPENSSL_BIN" x509 -in "$pin_cert" -pubkey -noout 2>/dev/null | "$OPENSSL_BIN" pkey -pubin -outform der 2>/dev/null |
+        "$OPENSSL_BIN" dgst -sha256 -binary 2>/dev/null | "$OPENSSL_BIN" base64 -A 2>/dev/null)
+    rm -f "$pin_cert"
+    printf '%s' "$pin_actual" | grep -Eq '^[0-9a-f]{64}$' || return 1
+    printf '%s' "$pin_spki" | grep -Eq '^[A-Za-z0-9+/]{43}=$' || return 1
+    printf '%s' "$pin_profile" | jq -e --arg h "$pin_actual" '.tls.pinned_cert_sha256 | index($h) != null' >/dev/null 2>&1 || return 2
+    printf '%s' "$pin_spki"
+}
+
+# Map certificate pin (pcs) / verification name (vcn) onto what sing-box can
+# enforce. Prefers a verified public-key pin; falls back to insecure TLS only
+# when the allow_insecure policy is enabled.
+resolve_tls_verification() {
+    tls_profile=$1; tls_allow=$2
+    tls_need=$(printf '%s' "$tls_profile" | jq -r '
+      if .tls.enabled != true or .tls.reality != null then "none"
+      elif ((.tls.pinned_cert_sha256 // [])|length)>0 then "pin"
+      elif ((.tls.verify_names // [])|length)>0 and (.tls.verify_names != [ (.tls.server_name // .server) ]) then "name"
+      else "none" end') || return 1
+    case "$tls_need" in none) printf '%s' "$tls_profile"; return 0 ;; esac
+    if [ "$tls_need" = pin ]; then
+        tls_rc=0; tls_spki=$(resolve_spki_pin "$tls_profile") || tls_rc=$?
+        case "$tls_rc" in
+            0)
+                logger -t cowboy-bebop 'certificate pin verified; enforcing public-key pin'
+                printf '%s' "$tls_profile" | jq -c --arg k "$tls_spki" '.tls.certificate_public_key_sha256=[$k] | .tls.insecure=false'
+                return 0 ;;
+            2) printf '%s\n' 'Server certificate does not match the pinned certificate' >&2; return 1 ;;
+        esac
+    fi
+    if [ "$tls_allow" = 1 ]; then
+        logger -t cowboy-bebop 'certificate pin/name cannot be enforced by sing-box here; TLS verification disabled by allow_insecure policy'
+        printf '%s' "$tls_profile" | jq -c '.tls.insecure=true'
+        return 0
+    fi
+    printf '%s\n' 'Certificate pin or name requires allow_insecure or openssl' >&2
+    return 1
+}
 ensure_backup() {
     [ -f "$CONFIG" ] || return 1
     if [ ! -f "$BACKUP" ]; then
@@ -222,6 +298,7 @@ apply() {
     load_core || return 1; check_singbox_version || { printf '%s\n' 'Unsupported sing-box version' >&2; return 1; }; capture_previous_state
     protocol=$(detect_protocol "$url") || { printf '%s\n' 'Unsupported proxy protocol' >&2; return 1; }
     case "$protocol" in vmess) profile=$(vmess_parse "$url") || return 1 ;; vless) profile=$(VLESS_ALLOW_INSECURE="$allow_insecure" vless_parse "$url") || return 1 ;; *) printf '%s\n' 'Unsupported proxy protocol' >&2; return 1 ;; esac
+    profile=$(resolve_tls_verification "$profile" "$allow_insecure") || return 1
     config=$(generate_config "$profile") || return 1
     umask 077; mkdir -p "$CONFIG_DIR" || return 1; rm -f "$CANDIDATE"; printf '%s' "$config" > "$CANDIDATE" || return 1; chmod 600 "$CANDIDATE" || { rm -f "$CANDIDATE"; return 1; }
     install_validated_config "$CANDIDATE" "$CONFIG" "$BACKUP" || { rm -f "$CANDIDATE"; return 1; }
@@ -236,6 +313,8 @@ recovery() {
     if [ -f "$PENDING" ] || [ -f "$PENDING_STATE" ]; then rollback_pending; return $?; fi
     set_enabled 0 || return 1; "$INIT" disable >/dev/null 2>&1 || true; stop_runtime; rm -f "$CANDIDATE"
 }
+# Allow the test suite to source the functions without running a command.
+if [ "${COWBOY_BEBOP_SOURCE_ONLY:-0}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
 case "${1:-}" in
     status) status ;; validate) validate ;; health) health ;; start) start ;; stop) stop ;; restart) restart ;; enable) manager_enable ;; disable) manager_disable ;; apply) apply ;; confirm) confirm ;; recovery) recovery ;;
     *) printf '%s\n' 'Usage: cowboy-bebop {status|validate|health|start|stop|restart|enable|disable|apply|confirm|recovery}' >&2; exit 2 ;;
