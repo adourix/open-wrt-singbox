@@ -11,6 +11,7 @@ define Package/luci-app-cowboy-bebop
   SECTION:=luci
   CATEGORY:=LuCI
   SUBMENU:=3. Applications
+  URL:=https://github.com/adourix/open-wrt-singbox
   TITLE:=LuCI support for Cowboy Bebop Manager
   DEPENDS:=+luci-base +rpcd +cowboy-bebop-manager
   PKGARCH:=all

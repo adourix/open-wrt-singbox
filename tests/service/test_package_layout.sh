@@ -9,7 +9,7 @@ fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
 
 for f in protocol/detector.sh protocol/vmess/parser.sh protocol/vless/parser.sh \
          config/generator.sh config/validator.sh config/version.sh \
-         config/templates/1.13.21.json network/firewall.sh service/manager.sh; do
+         config/templates/1.13.21.json config/templates/1.12.json network/firewall.sh service/manager.sh; do
     [ -f "$LIB/$f" ] || fail "missing packaged $f"
     cmp -s "$ROOT/core/$f" "$LIB/$f" || fail "packaged $f differs from core/$f"
     grep -qF "./files/usr/lib/cowboy-bebop/$f \$(1)/usr/lib/cowboy-bebop/$f" "$PKG/Makefile" || fail "Makefile does not install $f"
@@ -17,7 +17,7 @@ done
 [ -f "$PKG/files/etc/init.d/cowboy-bebop" ] || fail "init script"
 [ -f "$PKG/files/etc/config/cowboy-bebop" ] || fail "uci config"
 [ -f "$PKG/files/usr/bin/cowboy-bebop-manager" ] || fail "manager wrapper"
-[ "$(find "$LIB/config/templates" -name '*.json' | wc -l)" -eq 1 ] || fail "only the pinned 1.13.21 template ships"
+[ "$(find "$LIB/config/templates" -name '*.json' | wc -l)" -eq 2 ] || fail "exactly the 1.13.21 and 1.12 series templates ship"
 
 # No old project-owned names anywhere in the packaged sources.
 if grep -rnE 'singbox-manager|/etc/singbox|init\.d/singbox|/usr/lib/singbox' "$ROOT/openwrt" "$ROOT/core" >/dev/null; then

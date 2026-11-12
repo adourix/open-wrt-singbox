@@ -81,7 +81,7 @@ generate_config() {
           {type:"grpc",service_name:$p.transport.service_name}
         else null end;
       def proxy_outbound:
-        ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid,domain_resolver:{server:"dns-1",strategy:"ipv4_only"}}
+        ({type:$p.protocol,tag:"proxy-out",server:$p.server,server_port:$p.server_port,uuid:$p.uuid,domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"}}
         + (if $p.protocol=="vmess" then {alter_id:$p.alter_id,security:$p.security}
            elif $p.flow != null then {flow:$p.flow} else {} end)
         + (if tls != null then {tls:tls} else {} end)
@@ -90,10 +90,10 @@ generate_config() {
         log:{level:"warn"},
         dns:{
           servers:[
-            {type:"udp",tag:"dns-1",server:"1.1.1.1",server_port:53,detour:"direct"},
-            {type:"udp",tag:"dns-2",server:"8.8.8.8",server_port:53,detour:"direct"}
+            {type:"udp",tag:"configured-dns-0",server:"1.1.1.1",server_port:53},
+            {type:"udp",tag:"configured-dns-1",server:"8.8.8.8",server_port:53}
           ],
-          final:"dns-1",
+          final:"configured-dns-0",
           strategy:"ipv4_only"
         },
         inbounds:[{
@@ -107,7 +107,7 @@ generate_config() {
         ],
         route:{
           auto_detect_interface:true,
-          default_domain_resolver:{server:"dns-1",strategy:"ipv4_only"},
+          default_domain_resolver:{server:"configured-dns-0",strategy:"ipv4_only"},
           rules:[
             {ip_cidr:["1.1.1.1/32","8.8.8.8/32"],action:"route",outbound:"direct"},
             {ip_is_private:true,action:"route",outbound:"direct"},

@@ -4,7 +4,7 @@
 
 - OpenWrt: 25.12.5
 - Target: x86_64
-- sing-box: 1.13.21
+- sing-box: 1.13.21 (OpenWrt 25.12 feed) or 1.12.x (OpenWrt 24.10 feed, no certificate pinning)
 - Firewall: fw4/nftables
 - Shell: BusyBox ash
 - Required runtime tools: jq, nft, ip, uci, procd, uclient-fetch
@@ -143,7 +143,7 @@ Recovery is idempotent and removes the project-owned nftables table.
 
 The OpenWrt feed may provide its own sing-box package and integration. This
 project does not modify or co-enable that integration. The project service is
-named `singbox` and owns only its documented paths.
+named `cowboy-bebop` and owns only its documented paths.
 
 The `tests/` directory is development/CI only and is never installed into the
 runtime packages.

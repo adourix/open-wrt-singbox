@@ -4857,3 +4857,86 @@ CI now runs every test under both `dash` and `busybox sh`, a `shellcheck`
 error-level pass, and `sing-box check` (pinned 1.13.21) against generated
 configurations for every supported profile shape. Test data uses placeholders
 only; real share links are never committed (60.22).
+
+## 66.7 Audit against this document
+
+Fixed during the audit:
+
+- **Generated configs did not start.** The DNS servers carried
+  `"detour": "direct"`. `sing-box check` accepts that, but `sing-box run` stops
+  with `detour to an empty direct outbound makes no sense`. The DNS section now
+  matches the proven baseline in 60.15/61.11 (`configured-dns-0`,
+  `configured-dns-1`, no detour). The integration test now also *starts* every
+  generated config.
+- CLI (26, 46, 65.2, 65.7): added `version`, `status --json` and `--plain`;
+  a short header is printed only on an interactive terminal and is disabled by
+  `--plain`, `NO_COLOR` or `COWBOY_BEBOP_NO_BRAND=1`.
+- LuCI wording follows the table in 65.4.
+- Branding: `HOME_URL`/`BUG_REPORT_URL` in `os-release`, "unofficial" notice in
+  the banner, package `URL` metadata, login status line no longer starts
+  sing-box on every login (cached), first-boot script is idempotent and reads
+  single-quoted `DISTRIB_RELEASE` correctly.
+- Docs listed in section 5 and 65.5 now exist: `vmess.md`, `vless.md`,
+  `routing.md`, `dns.md`, `troubleshooting.md`, `licenses.md`.
+
+Known, intentional differences:
+
+- CI uses three workflows (`build-manager.yml`, `build-luci.yml`,
+  `build-branding.yml`) instead of the single `build-packages.yml` named in
+  60.8/61.3.
+- `/etc/banner` is generated at first boot instead of being packaged (65.6),
+  because the file is owned by `base-files` (allowed by 65.2).
+- The project nftables table is still named `inet singbox` (the example in
+  section 40).
+- Auto Start and `allow_insecure` are fixed by policy and not exposed as LuCI
+  controls (61.15), unlike the older mock-up in 31/32.
+- `cowboy-bebop-manager status` prints `State:/Config:/TUN:/Routing:/Apply:`
+  rather than the older sample in 46.
+- sing-box versions: see 66.8.
+
+Not verifiable from the repository (need a router): everything unchecked in
+60.20/61.20 — SDK builds, install, reboot, LuCI Save & Apply, rollback, LAN
+proxying, IPv6/DNS leak tests, Tailscale coexistence, the 51.1 resource gate.
+
+## 66.8 sing-box 1.12 series (OpenWrt 24.10, small flash)
+
+The first real install target runs OpenWrt 24.10.8 (`opkg`, 128 MB flash). Its
+feed ships `sing-box-tiny` 1.12.x; the upstream 1.13.21 binary is about 53 MB
+and does not fit. The manager therefore accepts:
+
+``` text
+1.13.21   exact (templates/1.13.21.json)   full feature set
+1.12.x    series (templates/1.12.json)     no certificate_public_key_sha256
+```
+
+The generated configuration is identical for both and is checked *and started*
+against real 1.13.21 and 1.12.22 binaries in CI. On 1.12 a `pcs` pin cannot be
+enforced, so such links are applied with `insecure: true` when
+`allow_insecure=1`, and refused otherwise. Other versions are still refused.
+
+## 66.9 opkg packages without the SDK (OpenWrt 24.10, reseller firmware)
+
+The KT-708 in the field runs reseller firmware based on OpenWrt 24.10.8
+(`opkg`, 23 MB writable flash, no `apk`). Its opkg feeds have no kernel-module
+feed matching its kernel, so `opkg install sing-box-tiny` fails with
+`cannot find dependency kmod-inet-diag`; `--force-depends` and `--nodeps` do not
+help (reproduced with real opkg-lede).
+
+- `openwrt/ipk/build-ipk.sh` builds the three packages as `.ipk` files by
+  running each package's own Makefile install recipe (no SDK, no compiler;
+  all packages are `Architecture: all`). The postinst is the same
+  `default_postinst` wrapper the SDK generates. `sing-box*` and `kmod-*` are
+  left out of `Depends` so a mismatched kernel cannot block the install.
+- `openwrt/ipk/install-opkg.sh` installs `sing-box-tiny` from the router's feed
+  (`--force-space`, verified afterwards), first trying a matching official
+  kmods feed, then a generated placeholder package
+  `cowboy-bebop-compat-kmods` that `Provides` only the unresolvable modules
+  (`kmod-tun` only when `/dev/net/tun` exists; `kmod-inet-diag` is only used for
+  per-process rules, which the generator never emits). Then it installs the
+  three `.ipk` files with opkg.
+- `tests/ipk/test_build_ipk.sh` checks the package structure and, in CI,
+  installs everything end to end with a real opkg built from source,
+  reproducing the missing-kmod case.
+
+This adds no fourth project package: the placeholder is generated on the
+router only when needed.

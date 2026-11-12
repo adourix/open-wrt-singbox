@@ -40,6 +40,18 @@ fi
 
 grep -F 'PKG_RELEASE:=23' "$PACKAGE" >/dev/null
 grep -F './files/usr/lib/cowboy-bebop/config/generator.sh' "$PACKAGE" >/dev/null
-! grep -F './files/usr/lib/singbox-manager/config/generator.sh' "$PACKAGE" >/dev/null
+
+# CLI contract (PROJECT.md 26, 46, 65.2, 65.7).
+grep -F "MANAGER_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' "$PACKAGE")" "$MANAGER" >/dev/null
+for cmd in status start stop restart enable disable apply validate health recovery confirm version; do
+    grep -E "(^|[ ;])$cmd\\) " "$MANAGER" >/dev/null || { echo "missing command $cmd" >&2; exit 1; }
+done
+TMPD=$(mktemp -d); trap 'rm -rf "$TMPD"' EXIT
+printf '#!/bin/sh\nexit 1\n' > "$TMPD/uci"; chmod +x "$TMPD/uci"
+# Machine-readable output is valid JSON and never branded, piped output is plain.
+PATH="$TMPD:$PATH" CONFIG_DIR="$TMPD/cfg" sh "$MANAGER" status --json |
+    jq -e '.state=="STOPPED" and (.config_valid|type)=="boolean" and (.tun|type)=="boolean" and (.pending|type)=="boolean"' >/dev/null
+[ "$(PATH="$TMPD:$PATH" CONFIG_DIR="$TMPD/cfg" sh "$MANAGER" status | head -n 1)" = "State: STOPPED" ]
+[ "$(PATH="$TMPD:$PATH" sh "$MANAGER" version --plain | head -n 1)" = "cowboy-bebop-manager: r$(sed -n 's/^PKG_RELEASE:=//p' "$PACKAGE")" ]
 
 printf '%s\n' 'manager lifecycle contract tests: PASS'

@@ -28,4 +28,15 @@ grep -F '"start", "stop"' "$MAKEFILE" >/dev/null
 
 grep -F 'luci.cowboy_bebop' "$RPC" >/dev/null
 
+# Status wording (PROJECT.md 65.4): literal labels.
+for label in 'Tunnel up' 'Tunnel down' 'Checking configuration' 'Confirm within 60 s' 'Reverted to last good config' 'Safe mode'; do
+    grep -F "$label" "$UI" >/dev/null || { echo "missing label: $label" >&2; exit 1; }
+done
+# The page styles itself and needs no custom theme package.
+grep -F 'PAGE_CSS' "$UI" >/dev/null
+grep -F '"title": "Cowboy Bebop"' "$MAKEFILE" >/dev/null
+grep -F 'admin/services/cowboy-bebop' "$MAKEFILE" >/dev/null
+# The saved URL/UUID is never returned to the browser.
+! grep -E 'proxy_url:\$|uuid' "$RPC" | grep -vE 'REDACTED|never returns|\.proxy_url \| strings|proxy_url=\$|proxy_url"|main\.proxy_url' >/dev/null
+
 printf '%s\n' 'LuCI UI contract tests: PASS'

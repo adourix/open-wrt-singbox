@@ -1,0 +1,7 @@
+{
+  "engine": "sing-box",
+  "version": "1.12.x",
+  "generator": "core/config/generator.sh",
+  "source_of_truth": "generator",
+  "note": "Version marker for the 1.12 patch series (OpenWrt 24.10 sing-box-tiny). Same generated configuration as 1.13.21, without certificate_public_key_sha256."
+}

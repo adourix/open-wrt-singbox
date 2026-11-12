@@ -8,9 +8,6 @@ on:
 permissions:
   contents: read
 
-env:
-  SINGBOX_VERSION: "1.13.21"
-
 jobs:
   shell-tests:
     strategy:
@@ -19,6 +16,7 @@ jobs:
         shell: [sh, "busybox sh"]
         test:
           - tests/branding/test_identity.sh
+          - tests/ipk/test_build_ipk.sh
           - tests/config/test_generator.sh
           - tests/config/test_runtime_policy.sh
           - tests/config/test_validator.sh
@@ -46,20 +44,43 @@ jobs:
         run: ${{ matrix.shell }} "${{ matrix.test }}"
 
   singbox-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        singbox: ["1.13.21", "1.12.22"]
     runs-on: ubuntu-24.04
+    name: sing-box ${{ matrix.singbox }} check + start
     steps:
       - uses: actions/checkout@v4
       - name: Install test dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
-      - name: Download pinned sing-box
+      - name: Download sing-box
         run: |
           set -eu
-          f="sing-box-${SINGBOX_VERSION}-linux-amd64"
-          wget -q "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/${f}.tar.gz"
+          f="sing-box-${{ matrix.singbox }}-linux-amd64"
+          wget -q "https://github.com/SagerNet/sing-box/releases/download/v${{ matrix.singbox }}/${f}.tar.gz"
           tar xzf "${f}.tar.gz"
           echo "SINGBOX_BIN=$PWD/${f}/sing-box" >> "$GITHUB_ENV"
-      - name: sing-box check of generated configs
+      - name: Check and start generated configs
         run: sh tests/integration/test_singbox_check.sh
+
+  opkg-install:
+    runs-on: ubuntu-24.04
+    name: opkg install (OpenWrt 24.10 path)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build opkg from source
+        run: |
+          set -eu
+          sudo apt-get update && sudo apt-get install -y cmake libjson-c-dev jq
+          git clone -q --depth 1 https://github.com/openwrt/libubox /tmp/libubox
+          cmake -S /tmp/libubox -B /tmp/libubox/b -DBUILD_LUA=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
+          make -C /tmp/libubox/b -j4 && sudo make -C /tmp/libubox/b install
+          git clone -q --depth 1 https://github.com/openwrt/opkg-lede /tmp/opkg
+          cmake -S /tmp/opkg -B /tmp/opkg/b -DCMAKE_INSTALL_PREFIX=/usr/local
+          make -C /tmp/opkg/b -j4 opkg-cl
+      - name: Install packages with real opkg
+        run: OPKG_BIN="env LD_LIBRARY_PATH=/usr/local/lib /tmp/opkg/b/src/opkg-cl" sh tests/ipk/test_build_ipk.sh
 
   shellcheck:
     runs-on: ubuntu-24.04
@@ -69,7 +90,7 @@ jobs:
         run: |
           set -eu
           shellcheck -s sh -S error \
-            core/*/*.sh core/protocol/*/*.sh tests/*/*.sh \
+            core/*/*.sh core/protocol/*/*.sh tests/*/*.sh openwrt/ipk/*.sh \
             openwrt/cowboy-bebop-manager/files/etc/init.d/cowboy-bebop \
             openwrt/cowboy-bebop-manager/files/usr/bin/cowboy-bebop-manager \
             openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop \

@@ -15,11 +15,22 @@ case "$_cb_enabled" in
   *) _cb_proxy="OFF" ;;
 esac
 
+# Starting sing-box just to read its version is slow on a router; cache it
+# in RAM until the binary changes.
 _cb_version="unknown"
-if command -v sing-box >/dev/null 2>&1; then
-	_cb_version="$(sing-box version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')"
-	[ -n "$_cb_version" ] || _cb_version="unknown"
+_cb_bin="$(command -v sing-box 2>/dev/null)"
+if [ -n "$_cb_bin" ]; then
+	_cb_cache=/tmp/run/cowboy-bebop-singbox-version
+	if [ -s "$_cb_cache" ] && [ "$_cb_cache" -nt "$_cb_bin" ]; then
+		read -r _cb_version < "$_cb_cache"
+	else
+		_cb_version="$(sing-box version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')"
+		[ -n "$_cb_version" ] || _cb_version="unknown"
+		mkdir -p /tmp/run 2>/dev/null && printf '%s\n' "$_cb_version" > "$_cb_cache" 2>/dev/null
+	fi
+	unset _cb_cache
 fi
+unset _cb_bin
 
 if [ -n "${NO_COLOR:-}" ]; then
   printf 'Cowboy Bebop | proxy: %s | TUN: %s | sing-box: %s\n' "$_cb_proxy" "$_cb_tun" "$_cb_version"

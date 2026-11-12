@@ -1,0 +1,30 @@
+diff a/openwrt/cowboy-bebop-branding/Makefile b/openwrt/cowboy-bebop-branding/Makefile	(rejected hunks)
+@@ -1,7 +1,7 @@
+ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=cowboy-bebop-branding
+-PKG_RELEASE:=4
++PKG_RELEASE:=5
+ PKG_LICENSE:=MIT
+ PKG_LICENSE_FILES:=../../LICENSE
+ PKG_MAINTAINER:=Abdulrahman Ayad
+@@ -20,7 +20,8 @@ define Package/cowboy-bebop-branding/description
+ Optional, lightweight system identity for Cowboy Bebop Manager on OpenWrt.
+ Generates an SSH banner from the installed OpenWrt release metadata, adds an
+ interactive login status line, descriptive OS release metadata and a safe
+-default hostname without changing machine-readable IDs.
++default hostname without changing machine-readable IDs. Removes third-party
++reseller identity (board model text, reseller LuCI theme) from the UI.
+ endef
+ 
+ define Build/Compile
+@@ -30,6 +31,9 @@ define Package/cowboy-bebop-branding/install
+ 	$(INSTALL_DIR) $(1)/etc/profile.d
+ 	$(INSTALL_BIN) ./files/etc/profile.d/cowboy-bebop.sh $(1)/etc/profile.d/cowboy-bebop.sh
+ 
++	$(INSTALL_DIR) $(1)/etc/init.d
++	$(INSTALL_BIN) ./files/etc/init.d/cowboy-bebop-identity $(1)/etc/init.d/cowboy-bebop-identity
++
+ 	$(INSTALL_DIR) $(1)/etc/uci-defaults
+ 	$(INSTALL_BIN) ./files/etc/uci-defaults/90-cowboy-bebop-branding $(1)/etc/uci-defaults/90-cowboy-bebop-branding
+ endef

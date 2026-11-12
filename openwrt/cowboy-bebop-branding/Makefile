@@ -12,6 +12,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/cowboy-bebop-branding
   SECTION:=base
   CATEGORY:=Base system
+  URL:=https://github.com/adourix/open-wrt-singbox
   TITLE:=Cowboy Bebop system branding
   DEPENDS:=+cowboy-bebop-manager
 endef

@@ -1,0 +1,31 @@
+diff a/core/protocol/vmess/parser.sh b/core/protocol/vmess/parser.sh	(rejected hunks)
+@@ -9,13 +9,10 @@ _vmess_decode_base64() {
+     payload=$(printf '%s' "$payload" | tr -- '_-' '/+')
+     payload=$(printf '%s' "$payload" | tr -d ' \t\r\n')
+     printf '%s' "$payload" | grep -Eq '^[A-Za-z0-9+/]*={0,2}$' || return 1
+-    case "$payload" in
+-        *=*)
+-            case "$payload" in *'='*=*) : ;; *) return 1 ;; esac
+-            case "$payload" in *'=' | *'==' ) : ;; *) return 1 ;; esac
+-            ;;
+-    esac
++    # The regex above already limits padding to at most two trailing '='.
++    # Padded input must be a whole number of 4-character groups.
+     len=${#payload}; rem=$((len % 4))
++    case "$payload" in *=) [ "$rem" -eq 0 ] || return 1 ;; esac
+     [ "$rem" -ne 1 ] || return 1
+     [ "$rem" -ne 2 ] || payload=$payload==
+     [ "$rem" -ne 3 ] || payload=$payload=
+@@ -54,6 +51,11 @@ vmess_parse() (
+     service_name=$(printf '%s' "$decoded" | jq -er 'if .serviceName==null then "" else .serviceName end') || { vmess_error "Invalid VMess serviceName"; return 1; }
+     [ "$network" != "grpc" ] || [ -n "$service_name" ] || { vmess_error "Missing gRPC serviceName"; return 1; }
+     [ "$network" != "ws" ] || [ -n "$path" ] || path="/"
+-    jq -cn --arg protocol vmess --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid" --argjson alter_id "$aid" --arg security "$security" --arg network "$network" --argjson tls "$tls" --arg sni "$sni" --arg host "$host" --arg path "$path" --arg name "$name" --arg fp "$fp" --arg service_name "$service_name" '{schema_version:1,protocol:$protocol,server:$server,server_port:$server_port,uuid:$uuid,alter_id:$alter_id,security:$security,tls:{enabled:$tls,server_name:(if $sni!="" then $sni else null end),insecure:false,utls:(if $fp!="" then {enabled:true,fingerprint:$fp} else null end),reality:null,alpn:null},transport:(if $network=="ws" then {type:"ws",path:$path,headers:(if $host!="" then {Host:$host} else {} end)} elif $network=="grpc" then {type:"grpc",service_name:$service_name} else {type:"tcp"} end),metadata:{name:(if $name!="" then $name else null end)}}'
++    # Optional Xray certificate pin (pcs) and verification name (vcn), TLS only.
++    pcs=$(printf '%s' "$decoded" | jq -er 'if .pcs==null then "" elif (.pcs|type)=="string" then .pcs else error end') || { vmess_error "Invalid certificate pin"; return 1; }
++    vcn=$(printf '%s' "$decoded" | jq -er 'if .vcn==null then "" elif (.vcn|type)=="string" then .vcn else error end') || { vmess_error "Invalid certificate name"; return 1; }
++    pins_json=$(jq -cn --arg v "$pcs" --argjson tls "$tls" 'if ($tls|not) or $v=="" then null else ($v|split(",")|map(gsub("[: \t]";"")|ascii_downcase)|map(select(length>0))) as $p | if ($p|all(test("^[0-9a-f]{64}$"))) then (if ($p|length)>0 then $p else null end) else error end end') || { vmess_error "Invalid certificate pin"; return 1; }
++    names_json=$(jq -cn --arg v "$vcn" --argjson tls "$tls" 'if ($tls|not) or $v=="" then null else ($v|split(",")|map(gsub("[ \t]";"")|ascii_downcase)|map(select(length>0))) as $n | if ($n|all(test("^[a-z0-9*][a-z0-9.*-]*$"))) then (if ($n|length)>0 then $n else null end) else error end end') || { vmess_error "Invalid certificate name"; return 1; }
++    jq -cn --argjson pins "$pins_json" --argjson names "$names_json" --arg protocol vmess --arg server "$server" --argjson server_port "$port" --arg uuid "$uuid" --argjson alter_id "$aid" --arg security "$security" --arg network "$network" --argjson tls "$tls" --arg sni "$sni" --arg host "$host" --arg path "$path" --arg name "$name" --arg fp "$fp" --arg service_name "$service_name" '{schema_version:1,protocol:$protocol,server:$server,server_port:$server_port,uuid:$uuid,alter_id:$alter_id,security:$security,tls:{enabled:$tls,server_name:(if $sni!="" then $sni else null end),insecure:false,utls:(if $fp!="" then {enabled:true,fingerprint:$fp} else null end),reality:null,alpn:null,pinned_cert_sha256:$pins,verify_names:$names},transport:(if $network=="ws" then {type:"ws",path:$path,headers:(if $host!="" then {Host:$host} else {} end)} elif $network=="grpc" then {type:"grpc",service_name:$service_name} else {type:"tcp"} end),metadata:{name:(if $name!="" then $name else null end)}}'
+ )
+ if [ "${0##*/}" = "parser.sh" ] && [ "$#" -gt 0 ]; then vmess_parse "$1"; fi

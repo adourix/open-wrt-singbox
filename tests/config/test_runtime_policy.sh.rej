@@ -1,0 +1,20 @@
+diff a/tests/config/test_runtime_policy.sh b/tests/config/test_runtime_policy.sh	(rejected hunks)
+@@ -12,7 +12,7 @@ for file in \
+     "$ROOT/core/service/manager.sh" \
+     "$ROOT/core/network/firewall.sh" \
+     "$ROOT/openwrt/cowboy-bebop-manager/files/usr/lib/cowboy-bebop/config/generator.sh" \
+-    "$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/singbox"; do
++    "$ROOT/openwrt/cowboy-bebop-manager/files/etc/init.d/cowboy-bebop"; do
+     sh -n "$file"
+ done
+ sh -n "$ROOT/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop"
+@@ -28,7 +28,8 @@ grep -F 'ip_is_private:true' "$ROOT/core/config/generator.sh" >/dev/null
+ grep -F 'hijack-dns' "$ROOT/core/config/generator.sh" >/dev/null
+ grep -F 'domain_resolver' "$ROOT/core/config/generator.sh" >/dev/null
+ 
+-if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' "$ROOT/core" >/dev/null 2>&1; then
++if grep -R -nE 'echo .*proxy_url|printf .*proxy_url|logger .*proxy_url|echo .*uuid|logger .*uuid' "$ROOT/core" 2>/dev/null |
++    grep -v 'uci -q get cowboy-bebop.main.proxy_url' >/dev/null; then
+     echo "possible secret logging found" >&2
+     exit 1
+ fi

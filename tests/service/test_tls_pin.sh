@@ -27,6 +27,8 @@ export MANAGER_LIB="$ROOT/core" CONFIG_DIR="$TMP/cfg" COWBOY_BEBOP_SOURCE_ONLY=1
 . "$ROOT/core/service/manager.sh"
 load_core
 logger() { :; }
+printf '#!/bin/sh\necho "sing-box version 1.13.21"\n' > "$TMP/sb13"; chmod +x "$TMP/sb13"
+SINGBOX_BIN="$TMP/sb13"
 
 uuid=550e8400-e29b-41d4-a716-446655440000
 link() { printf 'vless://%s@127.0.0.1:%s?encryption=none&security=tls&sni=decoy.example&fp=chrome&alpn=http%%2F1.1&vcn=real.example.org&pcs=%s&type=tcp&headerType=none#t' "$uuid" "$PORT" "$1"; }
@@ -48,6 +50,14 @@ OPENSSL_BIN=/nonexistent
 r=$(resolve_tls_verification "$p" 1) || fail "policy fallback"
 printf '%s' "$r" | jq -e '.tls.insecure==true and .tls.certificate_public_key_sha256==null' >/dev/null || fail "fallback profile"
 if resolve_tls_verification "$p" 0 >/dev/null 2>&1; then fail "fallback without policy"; fi
+
+# sing-box 1.12 cannot pin: policy fallback even though openssl works.
+OPENSSL_BIN=openssl
+printf '#!/bin/sh\necho "sing-box version 1.12.22"\n' > "$TMP/sb12"; chmod +x "$TMP/sb12"
+SINGBOX_BIN="$TMP/sb12"
+r=$(resolve_tls_verification "$p" 1) || fail "1.12 fallback"
+printf '%s' "$r" | jq -e '.tls.insecure==true and .tls.certificate_public_key_sha256==null' >/dev/null || fail "1.12 must not emit a pin"
+if resolve_tls_verification "$p" 0 >/dev/null 2>&1; then fail "1.12 without policy"; fi
 
 # Profiles without pins pass through untouched.
 plain=$(vless_parse "vless://$uuid@example.com:443?security=tls&sni=example.com")

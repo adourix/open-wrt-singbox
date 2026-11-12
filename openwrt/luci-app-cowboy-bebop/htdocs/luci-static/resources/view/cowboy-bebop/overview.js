@@ -92,9 +92,9 @@ return view.extend({
 		function stateInfo(next) {
 			var state = next.state || (next.running ? 'RUNNING' : (next.enabled ? 'ERROR' : 'STOPPED'));
 			if (next.pending)
-				return ['Confirm within the safety window', 'Waiting for confirmation', 'warning'];
+				return ['Confirm within 60 s', 'Auto-revert if no answer.', 'warning'];
 			if (state === 'RUNNING')
-				return ['Tunnel up', 'Connection is active.', 'success'];
+				return ['Tunnel up', 'Smooth sailing.', 'success'];
 			if (state === 'ERROR')
 				return ['Safe mode', 'Direct routing restored.', 'error'];
 			return ['Tunnel down', 'Router is on direct routes.', 'neutral'];
@@ -191,6 +191,11 @@ return view.extend({
 				return;
 			}
 			setBusy(true);
+			statusBox.innerHTML = '';
+			statusBox.appendChild(E('div', { class: 'cb-status-hero cb-status-warning' }, [
+				E('div', { class: 'cb-status-label' }, [_('Checking configuration')]),
+				E('div', { class: 'cb-status-subtitle' }, [_('Running validation.')])
+			]));
 			return callApply({ proxy_url: value }).then(function(result) {
 				if (!result || result.ok !== true) throw new Error(errorText(result, _('Failed to apply configuration.')));
 				url.value = '';
@@ -198,7 +203,11 @@ return view.extend({
 				ui.addNotification(null, E('p', [_('Configuration applied. Confirm it before the safety timer expires.')]), 'info');
 				return refresh();
 			}).catch(function(err) {
-				ui.addNotification(null, E('p', [err.message || _('Failed to apply configuration.')]), 'error');
+				var reason = err.message || _('Failed to apply configuration.');
+				var lines = [E('p', [_('Failed to apply configuration.')]), E('p', [_('Reason:') + ' ' + reason])];
+				if (/roll(ing|ed) back/i.test(reason))
+					lines.push(E('p', [_('Reverted to last good config. Nothing was lost.')]));
+				ui.addNotification(null, E('div', lines), 'error');
 				return refresh();
 			}).then(function(result) {
 				setBusy(false);

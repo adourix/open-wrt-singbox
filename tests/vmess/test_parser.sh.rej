@@ -1,0 +1,14 @@
+diff a/tests/vmess/test_parser.sh b/tests/vmess/test_parser.sh	(rejected hunks)
+@@ -72,4 +72,12 @@ long_payload=$(awk 'BEGIN { for (i=0;i<8200;i++) printf "A" }')
+ expect_error "vmess://$long_payload" "VMess URL is too long"
+ 
+ rm -f "$TMPDIR/vmess.err"
++# Single, double and missing Base64 padding must all decode.
++for j in '{"a":1}' '{"ab":1}' '{"abc":1}'; do
++    b=$(printf '%s' "$j" | base64 | tr -d '\n')
++    [ "$(_vmess_decode_base64 "$b")" = "$j" ] || fail "padding: $b"
++    [ "$(_vmess_decode_base64 "$(printf '%s' "$b" | tr -d '=')")" = "$j" ] || fail "unpadded: $b"
++done
++if _vmess_decode_base64 'eyJhYiI6MX0==' >/dev/null 2>&1; then fail "over-padded accepted"; fi
++
+ printf '%s\n' "VMess parser tests: PASS"

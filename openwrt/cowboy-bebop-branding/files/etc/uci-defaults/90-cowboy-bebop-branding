@@ -10,7 +10,7 @@ fi
 # Read the installed OpenWrt release dynamically; never hard-code a version.
 _cb_version=''
 if [ -f /etc/openwrt_release ]; then
-	_cb_version="$(awk -F= '$1 == "DISTRIB_RELEASE" { gsub(/"/, "", $2); print $2 }' /etc/openwrt_release 2>/dev/null)"
+	_cb_version="$(awk -F= '$1 == "DISTRIB_RELEASE" { gsub(/["\047]/, "", $2); print $2 }' /etc/openwrt_release 2>/dev/null)"
 fi
 [ -n "$_cb_version" ] || _cb_version='unknown'
 
@@ -34,6 +34,7 @@ cat > /etc/banner <<EOF
   .             .                                           *
 
   Support: +20175555667 | +20 1009823007
+  Unofficial build. Not affiliated with OpenWrt or any other brand.
 EOF
 
 # Only change descriptive fields; keep DISTRIB_ID, VERSION_ID and target IDs intact.
@@ -51,10 +52,22 @@ if [ -f /etc/os-release ]; then
 		-e 's/^PRETTY_NAME=.*/PRETTY_NAME="Cowboy Bebop Manager (based on OpenWrt)"/' \
 		/etc/os-release
 
+	# Descriptive URLs only; ID and VERSION_ID stay untouched.
+	for _cb_kv in 'HOME_URL="https://github.com/adourix/open-wrt-singbox"' \
+	              'BUG_REPORT_URL="https://github.com/adourix/open-wrt-singbox/issues"'; do
+		_cb_key=${_cb_kv%%=*}
+		if grep -q "^$_cb_key=" /etc/os-release; then
+			sed -i "s|^$_cb_key=.*|$_cb_kv|" /etc/os-release
+		else
+			echo "$_cb_kv" >> /etc/os-release
+		fi
+	done
+	unset _cb_kv _cb_key
+
 	if ! grep -q '^SUPPORT_PHONE=' /etc/os-release; then
 		echo 'SUPPORT_PHONE="+20175555667 +201009823007"' >> /etc/os-release
 	else
-		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +20 1009823007"/' /etc/os-release
+		sed -i 's/^SUPPORT_PHONE=.*/SUPPORT_PHONE="+20175555667 +201009823007"/' /etc/os-release
 	fi
 fi
 

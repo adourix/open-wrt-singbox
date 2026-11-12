@@ -1,0 +1,10 @@
+diff a/docs/openwrt.md b/docs/openwrt.md	(rejected hunks)
+@@ -31,7 +31,7 @@ rpcd -> cowboy-bebop
+           v
+       sing-box 1.13.21
+           |
+-       singtun0
++       tun0
+ ```
+ 
+ Project-specific paths:

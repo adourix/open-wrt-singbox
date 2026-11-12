@@ -10,6 +10,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/cowboy-bebop-manager
   SECTION:=net
   CATEGORY:=Network
+  URL:=https://github.com/adourix/open-wrt-singbox
   TITLE:=Cowboy Bebop Manager for sing-box
   DEPENDS:=+sing-box-tiny +jq +nftables +uclient-fetch +kmod-tun +kmod-nfnetlink-queue +kmod-nft-queue +kmod-inet-diag
 endef
@@ -43,6 +44,7 @@ define Package/cowboy-bebop-manager/install
 	$(INSTALL_BIN) ./files/usr/lib/cowboy-bebop/config/validator.sh $(1)/usr/lib/cowboy-bebop/config/validator.sh
 	$(INSTALL_BIN) ./files/usr/lib/cowboy-bebop/config/version.sh $(1)/usr/lib/cowboy-bebop/config/version.sh
 	$(INSTALL_DATA) ./files/usr/lib/cowboy-bebop/config/templates/1.13.21.json $(1)/usr/lib/cowboy-bebop/config/templates/1.13.21.json
+	$(INSTALL_DATA) ./files/usr/lib/cowboy-bebop/config/templates/1.12.json $(1)/usr/lib/cowboy-bebop/config/templates/1.12.json
 	$(INSTALL_BIN) ./files/usr/lib/cowboy-bebop/network/firewall.sh $(1)/usr/lib/cowboy-bebop/network/firewall.sh
 	$(INSTALL_BIN) ./files/usr/lib/cowboy-bebop/service/manager.sh $(1)/usr/lib/cowboy-bebop/service/manager.sh
 

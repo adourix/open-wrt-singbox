@@ -1,0 +1,55 @@
+diff a/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop b/openwrt/luci-app-cowboy-bebop/root/usr/libexec/rpcd/luci.cowboy_bebop	(rejected hunks)
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-# rpcd executable plugin for Cowboy Bebop Manager.
++# rpcd executable plugin for Cowboy Bebop Manager (ubus object luci.cowboy_bebop).
+ # Never returns the stored proxy URL, UUID, or private credentials.
+ 
+ MANAGER=/usr/bin/cowboy-bebop-manager
+@@ -11,7 +11,7 @@ short_error() { printf '%s\n' "$1" | tail -n 1 | cut -c 1-240; }
+ 
+ status_json() {
+     running=false; valid=false; tun=false; routing=false; enabled=false; pending=false; auto_start=false; allow_insecure=true
+-    configured=false; protocol=; server=; server_port=; transport=; tls=false; state=STOPPED
++    configured=false; protocol=; server=; server_port=; transport=; tls=false; sni=; certificate=; state=STOPPED
+     [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ] && enabled=true
+     [ -n "$(uci -q get cowboy-bebop.main.proxy_url 2>/dev/null)" ] && configured=true
+     [ -f /etc/cowboy-bebop/config.pending ] || [ -f /etc/cowboy-bebop/state.pending.json ] && pending=true
+@@ -28,8 +28,15 @@ status_json() {
+         server_port=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .server_port // empty' "$CONFIG" 2>/dev/null | head -n 1)
+         transport=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .transport.type // "tcp"' "$CONFIG" 2>/dev/null | head -n 1)
+         tls=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | (.tls.enabled // false)' "$CONFIG" 2>/dev/null | head -n 1)
++        sni=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .tls.server_name // empty' "$CONFIG" 2>/dev/null | head -n 1)
++        certificate=$(jq -r '(.outbounds // [])[] | select(.tag == "proxy-out") | .tls // {} |
++            if (.enabled // false) | not then empty
++            elif (.reality.enabled // false) then "reality"
++            elif (.certificate_public_key_sha256 // null) != null then "pinned"
++            elif (.insecure // false) then "not verified"
++            else "verified" end' "$CONFIG" 2>/dev/null | head -n 1)
+     fi
+-    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" --argjson configured "$configured" --argjson allow_insecure "$allow_insecure" --arg state "$state" --arg protocol "${protocol:-}" --arg server "${server:-}" --arg server_port "${server_port:-}" --arg transport "${transport:-}" --argjson tls "${tls:-false}" '{state:$state,enabled:$enabled,running:$running,auto_start:$auto_start,allow_insecure:$allow_insecure,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls}'
++    jq -cn --argjson enabled "$enabled" --argjson running "$running" --argjson valid "$valid" --argjson tun "$tun" --argjson routing "$routing" --argjson auto_start "$auto_start" --argjson pending "$pending" --argjson configured "$configured" --argjson allow_insecure "$allow_insecure" --arg state "$state" --arg protocol "${protocol:-}" --arg server "${server:-}" --arg server_port "${server_port:-}" --arg transport "${transport:-}" --argjson tls "${tls:-false}" --arg sni "${sni:-}" --arg certificate "${certificate:-}" '{state:$state,enabled:$enabled,running:$running,auto_start:$auto_start,allow_insecure:$allow_insecure,configuration_valid:$valid,tun:$tun,routing:$routing,pending:$pending,configured:$configured,protocol:$protocol,server:$server,server_port:$server_port,transport:$transport,tls:$tls,sni:$sni,certificate:$certificate}'
+ }
+ 
+ preview_profile() {
+@@ -37,9 +44,18 @@ preview_profile() {
+     . /usr/lib/cowboy-bebop/protocol/detector.sh || return 1
+     . /usr/lib/cowboy-bebop/protocol/vmess/parser.sh || return 1
+     . /usr/lib/cowboy-bebop/protocol/vless/parser.sh || return 1
+-    protocol=$(detect_protocol "$proxy_url") || return 1
++    protocol=$(detect_protocol "$proxy_url") || { printf "%s\n" "Unsupported protocol" >&2; return 1; }
+     case "$protocol" in vmess) profile=$(vmess_parse "$proxy_url") || return 1 ;; vless) profile=$(VLESS_ALLOW_INSECURE=1 vless_parse "$proxy_url") || return 1 ;; *) return 1 ;; esac
+-    printf '%s' "$profile" | jq -c '{protocol,server,server_port,transport:.transport.type,tls:.tls.enabled,name:(.metadata.name // null)}'
++    printf '%s' "$profile" | jq -c '{protocol,server,server_port,transport:.transport.type,tls:.tls.enabled,
++        sni:(.tls.server_name // null),
++        certificate:(
++          if .tls.enabled != true then null
++          elif .tls.reality != null then "reality"
++          elif ((.tls.pinned_cert_sha256 // [])|length)>0 then "pinned"
++          elif .tls.insecure then "not verified"
++          elif ((.tls.verify_names // [])|length)>0 and (.tls.verify_names != [(.tls.server_name // .server)]) then "custom name"
++          else "verified" end),
++        name:(.metadata.name // null)}'
+ }
+ run_manager() { output=$($MANAGER "$1" 2>&1); rc=$?; if [ "$rc" -eq 0 ]; then printf '%s\n' '{"ok":true}'; else json_error "$(short_error "$output")"; fi; return 0; }
+ 

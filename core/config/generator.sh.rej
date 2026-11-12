@@ -1,0 +1,40 @@
+diff a/core/config/generator.sh b/core/config/generator.sh	(rejected hunks)
+@@ -25,8 +25,27 @@ generate_config() {
+       and ((.tls.reality==null) or (.tls.reality|type)=="object")
+       and ((.tls.alpn==null) or (.tls.alpn|type)=="array")
+       and (.transport.type=="tcp" or .transport.type=="ws" or .transport.type=="grpc")
++      and ((.tls.pinned_cert_sha256 // null)==null or (.tls.pinned_cert_sha256|type)=="array")
++      and ((.tls.verify_names // null)==null or (.tls.verify_names|type)=="array")
++      and ((.tls.certificate_public_key_sha256 // null)==null
++           or ((.tls.certificate_public_key_sha256|type)=="array"
++               and (.tls.certificate_public_key_sha256|length)>0
++               and (.tls.certificate_public_key_sha256|all(type=="string" and test("^[A-Za-z0-9+/]{43}=$")))))
+     ' >/dev/null 2>&1 || { printf '%s\n' 'Invalid normalized TLS/transport' >&2; return 1; }
+ 
++    # sing-box cannot consume an Xray certificate pin (hash of the whole
++    # certificate) or verify a name other than the SNI. The manager must
++    # first resolve them into a public-key pin, or the profile must be
++    # explicitly marked insecure by policy. Never emit a config that silently
++    # drops the requested verification.
++    printf '%s' "$profile" | jq -e '
++      if .tls.enabled != true or .tls.reality != null then true
++      elif (.tls.certificate_public_key_sha256 // null) != null or .tls.insecure then true
++      elif ((.tls.pinned_cert_sha256 // [])|length)>0 then false
++      elif ((.tls.verify_names // [])|length)>0 then (.tls.verify_names == [ (.tls.server_name // .server) ])
++      else true end
++    ' >/dev/null 2>&1 || { printf '%s\n' 'Certificate verification settings cannot be enforced' >&2; return 1; }
++
+     printf '%s' "$profile" | jq -e '
+       if .transport.type=="ws" then (.transport.path|type)=="string" and (.transport.headers|type)=="object"
+       elif .transport.type=="grpc" then (.transport.service_name|type)=="string" and (.transport.service_name|length)>0
+@@ -48,7 +67,9 @@ generate_config() {
+           {enabled:true}
+           + (if $p.tls.server_name != null then {server_name:$p.tls.server_name} else {} end)
+           + (if $p.tls.alpn != null then {alpn:$p.tls.alpn} else {} end)
+-          + (if $p.tls.insecure then {insecure:true} else {} end)
++          + (if ($p.tls.certificate_public_key_sha256 // null) != null
++               then {certificate_public_key_sha256:$p.tls.certificate_public_key_sha256}
++             elif $p.tls.insecure then {insecure:true} else {} end)
+           + (if $p.tls.utls != null then {utls:$p.tls.utls} else {} end)
+           + (if $p.tls.reality != null then {reality:$p.tls.reality} else {} end)
+         else null end;

@@ -1,0 +1,45 @@
+diff a/tests/config/test_generator.sh b/tests/config/test_generator.sh	(rejected hunks)
+@@ -61,9 +61,41 @@ if generate_config "$bad" >/dev/null 2>/dev/null; then fail "invalid protocol ac
+ bad_transport=$(printf '%s' "$profile" | jq '.transport.type="xhttp"')
+ if generate_config "$bad_transport" >/dev/null 2>/dev/null; then fail "invalid transport accepted"; fi
+ 
+-printf '%s\n' "Config generator tests: PASS"
+-malicious=$(printf '%s' "$profile" | jq --arg s '$(touch /tmp/pwned)' '.server=$s')
++malicious=$(
++printf '%s' "$profile" | jq --arg s '$(touch /tmp/pwned)' '.server=$s')
+ rm -f /tmp/pwned
+ if generate_config "$malicious" >/dev/null 2>"$TMPDIR/generator.err"; then :; fi
+ if [ -e /tmp/pwned ]; then fail "generator executed shell input"; fi
+ rm -f "$TMPDIR/generator.err"
++
++# --- Certificate pin handling ---
++base=$(jq -cn --arg uuid "$uuid" '{schema_version:1,protocol:"vless",server:"192.0.2.10",server_port:17943,uuid:$uuid,flow:null,tls:{enabled:true,server_name:"decoy.example",insecure:false,utls:{enabled:true,fingerprint:"chrome"},reality:null,alpn:["http/1.1"],pinned_cert_sha256:["a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"],verify_names:["real.example.org"]},transport:{type:"tcp"},metadata:{name:null}}')
++
++# An unresolved Xray pin must never be silently dropped.
++if generate_config "$base" >/dev/null 2>&1; then fail "unresolved pin accepted"; fi
++
++# Resolved public-key pin is emitted and wins over insecure.
++spki='nEjF/gqqkyltAfqfikO4tefssJbkJimrWK78b8ULnH8='
++out=$(generate_config "$(printf '%s' "$base" | jq -c --arg k "$spki" '.tls.certificate_public_key_sha256=[$k] | .tls.insecure=true')")
++printf '%s\n' "$out" | jq -e --arg k "$spki" '
++  .outbounds[1].tls.certificate_public_key_sha256==[$k]
++  and (.outbounds[1].tls|has("insecure")|not)
++  and .outbounds[1].tls.server_name=="decoy.example"
++  and (.outbounds[1]|has("transport")|not)' >/dev/null || fail "public-key pin"
++
++# Policy fallback: insecure explicitly set by the manager.
++generate_config "$(printf '%s' "$base" | jq -c '.tls.insecure=true')" |
++  jq -e '.outbounds[1].tls.insecure==true' >/dev/null || fail "insecure fallback"
++
++# A verify name equal to the SNI needs nothing special.
++generate_config "$(printf '%s' "$base" | jq -c '.tls.pinned_cert_sha256=null | .tls.verify_names=["decoy.example"]')" >/dev/null ||
++  fail "vcn equal to sni"
++if generate_config "$(printf '%s' "$base" | jq -c '.tls.pinned_cert_sha256=null')" >/dev/null 2>&1; then
++  fail "differing vcn without policy accepted"
++fi
++# Malformed public-key pin is rejected.
++if generate_config "$(printf '%s' "$base" | jq -c '.tls.certificate_public_key_sha256=["not-base64"]')" >/dev/null 2>&1; then
++  fail "bad public-key pin accepted"
++fi
++
++printf '%s\n' "Config generator tests: PASS"

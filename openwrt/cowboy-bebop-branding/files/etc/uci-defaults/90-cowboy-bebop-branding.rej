@@ -1,0 +1,11 @@
+diff a/openwrt/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding b/openwrt/cowboy-bebop-branding/files/etc/uci-defaults/90-cowboy-bebop-branding	(rejected hunks)
+@@ -59,4 +59,9 @@ if [ -f /etc/os-release ]; then
+ fi
+ 
+ unset _cb_version
++
++# Remove reseller identity (board model text, reseller LuCI theme) right away
++# on a live install; the init script repeats it on every boot because
++# /tmp/sysinfo is rebuilt at boot.
++[ -x /etc/init.d/cowboy-bebop-identity ] && /etc/init.d/cowboy-bebop-identity start >/dev/null 2>&1
+ exit 0

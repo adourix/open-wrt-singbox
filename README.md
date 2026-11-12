@@ -22,7 +22,8 @@ The core manager also works without LuCI through `cowboy-bebop-manager`.
 ## Pinned runtime
 
 - OpenWrt 25.12.5
-- sing-box 1.13.21
+- sing-box 1.13.21 (OpenWrt 25.12 feed) — full feature set
+- sing-box 1.12.x (OpenWrt 24.10 feed, `opkg`) — also supported; no certificate pinning
 - BusyBox ash + jq + UCI + procd + nftables/fw4
 - `sing-box-tiny` package on the target router
 - TUN with `auto_route` + `auto_redirect`
@@ -43,6 +44,27 @@ Runtime dependency: `sing-box-tiny` from the matching OpenWrt feed. Do not insta
 The former `luci-theme-cowboy-bebop` package was removed. Installing the new LuCI app or
 branding package switches LuCI back to the bootstrap theme if it still points at it.
 
+## Installing on OpenWrt 24.10 (opkg) without the SDK
+
+All three packages are architecture-independent, so they can be built on any
+Linux machine and installed with opkg:
+
+```sh
+sh openwrt/ipk/build-ipk.sh dist/          # -> dist/*.ipk
+mkdir -p bundle/ipk && cp dist/*.ipk bundle/ipk/
+cp openwrt/ipk/install-opkg.sh bundle/install.sh
+cp openwrt/ipk/uninstall-opkg.sh bundle/uninstall.sh
+```
+
+Copy `bundle/` to the router and run `sh install.sh`. It installs
+`sing-box-tiny` (about 10 MB) from the router's own feed. On firmware whose
+kernel is not in the official kmods feed, opkg refuses `sing-box-tiny`
+(`cannot find dependency kmod-inet-diag`); the installer then adds the matching
+kmods feed if one exists, or installs a small placeholder package,
+`cowboy-bebop-compat-kmods`, which marks the requirement as met (`kmod-tun`
+only if `/dev/net/tun` already works). Remove everything with
+`sh uninstall.sh --with-sing-box`.
+
 ## Supported share links
 
 `vmess://` (Base64 JSON) and `vless://` with TCP, WebSocket or gRPC transports and
@@ -55,7 +77,7 @@ Xray certificate options are supported:
   checks it against `pcs` and enforces the matching public-key pin. This needs `openssl`
   (`apk add openssl-util`).
 - A certificate that does not match the pin is always rejected.
-- Without `openssl`, or for a `vcn` that differs from the SNI, verification is disabled
+- Without `openssl`, on sing-box 1.12.x, or for a `vcn` that differs from the SNI, verification is disabled
   only if UCI `cowboy-bebop.main.allow_insecure` is `1` (the default); otherwise apply fails.
 - `headerType=http` (Xray TCP HTTP obfuscation) has no sing-box equivalent and is rejected.
 
@@ -80,3 +102,13 @@ Auto Start and insecure-TLS policy are fixed by the current MVP policy and are i
 ## Important
 
 The project is designed as an OpenWrt package, not as a web application. Production routers should not need Node.js, Docker or a permanent application server.
+
+## Notices
+
+Unofficial project. Not affiliated with the owners of the "Cowboy Bebop" series, with OpenWrt,
+or with SagerNet/sing-box. Images are based on OpenWrt and are not official OpenWrt builds.
+See [docs/licenses.md](docs/licenses.md).
+
+Docs: [architecture](docs/architecture.md) · [openwrt](docs/openwrt.md) · [vless](docs/vless.md) ·
+[vmess](docs/vmess.md) · [routing](docs/routing.md) · [dns](docs/dns.md) ·
+[troubleshooting](docs/troubleshooting.md) · [normalized profile](docs/normalized-profile-v1.md)

@@ -28,4 +28,18 @@ if check_singbox_version; then
     exit 1
 fi
 
+# The 1.12 patch series (OpenWrt 24.10 feed) is accepted, without the pin feature.
+for v in 1.12.22 1.12.17; do
+    printf '#!/bin/sh\necho "sing-box version %s"\n' "$v" > "$TMP/sing-box"
+    check_singbox_version || exit 1
+    if singbox_supports_pubkey_pin; then exit 1; fi
+done
+printf '#!/bin/sh\necho "sing-box version 1.13.21"\n' > "$TMP/sing-box"
+singbox_supports_pubkey_pin || exit 1
+# Other 1.13 patch levels, 1.11 and garbage are refused.
+for v in 1.13.20 1.11.15 1.12 banana; do
+    printf '#!/bin/sh\necho "sing-box version %s"\n' "$v" > "$TMP/sing-box"
+    if check_singbox_version; then exit 1; fi
+done
+
 echo "version tests: PASS"

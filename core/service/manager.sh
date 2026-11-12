@@ -14,6 +14,7 @@ FIREWALL=${FIREWALL:-$MANAGER_LIB/network/firewall.sh}
 ROLLBACK_DELAY=${ROLLBACK_DELAY:-60}
 CONNECTIVITY_TIMEOUT=${CONNECTIVITY_TIMEOUT:-8}
 CONNECTIVITY_TRIES=${CONNECTIVITY_TRIES:-2}
+MANAGER_RELEASE=23
 PIN_TIMEOUT=${PIN_TIMEOUT:-8}
 OPENSSL_BIN=${OPENSSL_BIN:-openssl}
 
@@ -160,7 +161,9 @@ resolve_tls_verification() {
       elif ((.tls.verify_names // [])|length)>0 and (.tls.verify_names != [ (.tls.server_name // .server) ]) then "name"
       else "none" end') || return 1
     case "$tls_need" in none) printf '%s' "$tls_profile"; return 0 ;; esac
-    if [ "$tls_need" = pin ]; then
+    if [ "$tls_need" = pin ] && ! singbox_supports_pubkey_pin; then
+        logger -t cowboy-bebop 'installed sing-box is older than 1.13 and cannot enforce a certificate pin'
+    elif [ "$tls_need" = pin ]; then
         tls_rc=0; tls_spki=$(resolve_spki_pin "$tls_profile") || tls_rc=$?
         case "$tls_rc" in
             0)
@@ -175,7 +178,7 @@ resolve_tls_verification() {
         printf '%s' "$tls_profile" | jq -c '.tls.insecure=true'
         return 0
     fi
-    printf '%s\n' 'Certificate pin or name requires allow_insecure or openssl' >&2
+    printf '%s\n' 'Certificate pin or name requires allow_insecure, or sing-box 1.13 with openssl' >&2
     return 1
 }
 ensure_backup() {
@@ -239,7 +242,34 @@ schedule_rollback() {
 }
 rollback_pending() { load_core || return 1; cancel_rollback_timer; restore_and_recover; }
 validate() { if config_valid; then printf '%s\n' 'Configuration: valid'; return 0; fi; printf '%s\n' 'Configuration: invalid'; return 1; }
+# Human-facing header only: interactive terminal, and not disabled by
+# --plain, NO_COLOR or COWBOY_BEBOP_NO_BRAND. Machine-readable output is never branded.
+brand_header() {
+    [ "${PLAIN:-0}" = 0 ] && [ -z "${COWBOY_BEBOP_NO_BRAND:-}" ] && [ -t 1 ] || return 0
+    if [ -n "${NO_COLOR:-}" ]; then printf '%s\n' '== Cowboy Bebop Manager =='; else printf '\033[1;33m%s\033[0m\n' '== Cowboy Bebop Manager =='; fi
+}
+version() {
+    brand_header
+    printf 'cowboy-bebop-manager: r%s\n' "$MANAGER_RELEASE"
+    if command -v "$SINGBOX_BIN" >/dev/null 2>&1; then
+        printf 'sing-box: %s\n' "$("$SINGBOX_BIN" version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')"
+    else
+        printf '%s\n' 'sing-box: missing'
+    fi
+}
+status_json() {
+    st=STOPPED; cv=false; tn=false; rt=false; pd=false
+    if process_running; then st=RUNNING; elif [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ]; then st=ERROR; fi
+    if config_valid; then cv=true; fi
+    if tun_exists; then tn=true; fi
+    if routing_exists; then rt=true; fi
+    if [ -f "$PENDING" ] || [ -f "$PENDING_STATE" ]; then pd=true; fi
+    jq -cn --arg state "$st" --argjson config_valid "$cv" --argjson tun "$tn" --argjson routing "$rt" --argjson pending "$pd" \
+        '{state:$state,config_valid:$config_valid,tun:$tun,routing:$routing,pending:$pending}'
+}
 status() {
+    if [ "${JSON:-0}" = 1 ]; then status_json; return $?; fi
+    brand_header
     if process_running; then printf '%s\n' 'State: RUNNING'; elif [ "$(uci -q get cowboy-bebop.main.enabled 2>/dev/null)" = "1" ]; then printf '%s\n' 'State: ERROR'; else printf '%s\n' 'State: STOPPED'; fi
     if config_valid; then printf '%s\n' 'Config: valid'; else printf '%s\n' 'Config: invalid'; fi
     if tun_exists; then printf '%s\n' 'TUN: tun0'; else printf '%s\n' 'TUN: absent'; fi
@@ -315,7 +345,12 @@ recovery() {
 }
 # Allow the test suite to source the functions without running a command.
 if [ "${COWBOY_BEBOP_SOURCE_ONLY:-0}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
-case "${1:-}" in
+PLAIN=0; JSON=0; COMMAND=
+for arg in "$@"; do
+    case "$arg" in --plain) PLAIN=1 ;; --json) JSON=1 ;; *) [ -n "$COMMAND" ] || COMMAND=$arg ;; esac
+done
+case "$COMMAND" in
+    version) version ;;
     status) status ;; validate) validate ;; health) health ;; start) start ;; stop) stop ;; restart) restart ;; enable) manager_enable ;; disable) manager_disable ;; apply) apply ;; confirm) confirm ;; recovery) recovery ;;
-    *) printf '%s\n' 'Usage: cowboy-bebop {status|validate|health|start|stop|restart|enable|disable|apply|confirm|recovery}' >&2; exit 2 ;;
+    *) printf '%s\n' 'Usage: cowboy-bebop-manager {status [--json]|version|validate|health|start|stop|restart|enable|disable|apply|confirm|recovery} [--plain]' >&2; exit 2 ;;
 esac
